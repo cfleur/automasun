@@ -1,0 +1,20 @@
+[project]
+name = "automasun"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "", email = ""},
+]
+dependencies = [
+    "jupyterlab>=4.2.2",
+    "pandas>=2.2.2",
+    "matplotlib>=3.9.0",
+    "h5py>=3.11.0",
+]
+requires-python = "==3.10.*"
+readme = "README.md"
+license = {text = "none"}
+
+
+[tool.pdm]
+distribution = false
