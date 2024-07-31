@@ -1,10 +1,8 @@
 import pandas as pd
-pd.set_option('display.max_colwidth', 100)
-
 import numpy as np
 import datetime
 
-import read
+import ioutils 
 import timeutils
 import plot
 
@@ -12,17 +10,18 @@ import plot
 import importlib
 importlib.reload(plot)
 importlib.reload(timeutils)
-importlib.reload(read)
+importlib.reload(ioutils)
+
 
 def print_csv_h5_keys(path, sep=',') -> None:
     file_type = str.split(path, '.')[-1]
 
     if file_type == 'csv':
         # TODO: include option to change separator
-        print(pd.DataFrame(read.csv_get_keys(path, sep=sep)))
+        print(pd.DataFrame(ioutils.csv_get_keys(path, sep=sep)))
         
     if file_type == 'h5':
-        print(pd.DataFrame(read.h5_get_keys(path)))
+        print(pd.DataFrame(ioutils.h5_get_keys(path)))
 
 
 def show_keys(
@@ -31,6 +30,9 @@ def show_keys(
         ) -> None:
     """
     """ 
+
+    # increase column width to print full keys
+    pd.set_option('display.max_colwidth', 100)
 
     if type(file_paths) == list:
         for path in file_paths:
@@ -44,8 +46,9 @@ def show_keys(
             print_csv_h5_keys(file_paths[key], sep=sep)
     else:
         print('Supplied filepaths must be of str, list or dict type.')
-        raise(TypeError)
+        raise TypeError
     
+
 def compare_single_day(
         filepaths: dict,
         col_numbers: dict
@@ -63,12 +66,12 @@ def compare_single_day(
     # Read in reference and test datasets
 
     # CH4 column
-    data_test = np.array(read.csv_get_col(f_test, col_numbers['data_test']))
-    data_ref = np.array(read.h5_get_col(f_ref, col_numbers['data_ref']))
+    data_test = np.array(ioutils.csv_get_col(f_test, col_numbers['data_test']))
+    data_ref = np.array(ioutils.h5_get_col(f_ref, col_numbers['data_ref']))
 
     # Time column
-    data_test_time = np.array(read.csv_get_col(f_test, col_numbers['time_test']))
-    data_ref_time = np.array(read.h5_get_col(f_ref, col_numbers['time_ref']))
+    data_test_time = np.array(ioutils.csv_get_col(f_test, col_numbers['time_test']))
+    data_ref_time = np.array(ioutils.h5_get_col(f_ref, col_numbers['time_ref']))
 
     # Parse time columns
     epoch_start_date = datetime.datetime(2000, 1, 1)
