@@ -2,7 +2,10 @@ import h5py
 import pandas as pd
 import numpy as np
 import os
+
 from pathlib import Path
+
+import timeutils
 
 
 def h5_get_keys(f):
@@ -37,14 +40,7 @@ def parse_pressure_file(
     """Takes aws .lst file as input and creates a .csv file with data necessary for retrieval algorithm. Pre
     """
 
-    df = pd.read_csv(input_file_path, sep=in_sep, engine='python').drop(0)
-
-    # separate date and time from timestamp
-    # note that date and time are strings
-    _date = []
-    _time = []
-
-    # set default values for mutable types 
+    # set default values for mutable type arguments 
     if in_col_names == None:
         in_col_names = {}
     
@@ -54,6 +50,9 @@ def parse_pressure_file(
             'time': 'UTCtime', 
             'pressure': 'BaroTHB40'
         }
+    
+    # read in pressure file
+    df = pd.read_csv(input_file_path, sep=in_sep, engine='python').drop(0)
 
     # parse timestamp
     if 'timestamp_col_name' in in_col_names: 
@@ -61,10 +60,8 @@ def parse_pressure_file(
     else: 
         timestamp_col_name = df.columns[0]
 
-    for row in df[timestamp_col_name]:
-        row_items = row.split(' ')
-        _date.append(str(row_items[0]))
-        _time.append(str(row_items[1]))
+    timestamps = list(df[timestamp_col_name])
+    timestamp_df = timeutils.timestamp_to_date_time(timestamps)
 
     # apply correction to pressure column if correction provided
     _pressure = df['P_ST']
@@ -81,7 +78,8 @@ def parse_pressure_file(
         raise ValueError('Pressure correction must be either None (default), a float, or a numpy array of floats of same length as number of pressure measurements.')
 
     # create new dataframe
-    _out_pressure = pd.DataFrame(np.array([_date, _time, _pressure]).T, columns=[out_col_names['date'], out_col_names['time'], out_col_names['pressure']])
+    _out_pressure = pd.DataFrame(np.array([timestamp_df['date'], timestamp_df['time'], _pressure]).T,
+                                 columns=[out_col_names['date'], out_col_names['time'], out_col_names['pressure']])
     
     # export
     _out_pressure.to_csv(output_file_path, index=False, sep=out_sep)
