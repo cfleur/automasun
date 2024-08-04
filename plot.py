@@ -37,12 +37,12 @@ def compare_all_timestamps(timeseries: dict,
     # data series test
     ax.plot(timeseries['epochtime_test'], timeseries['y_test'] + y_test_offset, '-',
             color='darkorange', alpha=0.5,
-            label=f'local data{y_series_name} 01-06-2020 + {y_test_offset}')
+            label=f'local data{y_series_name} + {y_test_offset}')
     
     # data series ref
     ax.plot(timeseries['epochtime_ref'], timeseries['y_ref'],
             color='darkblue', alpha=0.5,
-            label=f'COCCON data repo {y_series_name} 01-06-2020')
+            label=f'COCCON data repo {y_series_name}')
 
     # vertical lines at extra times in ref data
     for et in disagreeing_timestamps['ref']:

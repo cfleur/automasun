@@ -2,6 +2,7 @@ import h5py
 import pandas as pd
 import numpy as np
 import os
+import shutil
 
 from pathlib import Path
 
@@ -27,6 +28,19 @@ def csv_get_keys(f, sep=','):
 def csv_get_col(f, col_num, sep=','):
     df = pd.read_csv(f, sep=sep)
     return df[df.columns[col_num]]
+
+
+def preprocess_pressure_file(input_pressure_file: str, 
+                             out_dir_name: str,
+                             out_file_name: str,
+                             pressure_correction: any) -> None:
+
+    # create directories needed in output file path
+    Path(out_dir_name).mkdir(parents=True, exist_ok=True)
+
+    out_f = os.path.join(out_dir_name, out_file_name)
+
+    parse_pressure_file(input_pressure_file, out_f, pressure_correction=pressure_correction)
 
 
 def parse_pressure_file(
@@ -87,14 +101,50 @@ def parse_pressure_file(
     print(f'{output_file_path} pressure file written.')
 
 
-def preprocess_pressure_file(input_pressure_file: str, 
-                             out_dir_name: str,
-                             out_file_name: str,
-                             pressure_correction: any) -> None:
+def filter_move_files(
+        src_path: str,
+        glob_pattern: str,
+        dest_path: str,
+        quiet: bool = False
+) -> None:
+    """
+    Filters files by `file_extension` and moves all files of same extension to 
+    `dest_path`. 
+    """
 
-    # create directories needed in output file path
-    Path(out_dir_name).mkdir(parents=True, exist_ok=True)
+    src = Path(src_path)
 
-    out_f = os.path.join(out_dir_name, out_file_name)
+    if not quiet:
+        print(f'Searching for pattern {glob_pattern} in {src}')
 
-    parse_pressure_file(input_pressure_file, out_f, pressure_correction=pressure_correction)
+    glob_contents = list(src.glob(glob_pattern))
+
+    if not quiet:
+        print(f'Creating directory {dest_path} if doesn\'t exist')
+
+    Path(dest_path).mkdir(parents=True, exist_ok=True)
+    # TODO: test that the directory was created
+
+    file_count = 0
+
+    for file in glob_contents:
+        file_count += 1
+        shutil.move(file, dest_path)
+
+    print(f'Moved {file_count} files matching pattern {glob_pattern}')
+    
+
+def separate_mod_vmr_map(
+        src_path: str,
+        dest_dict: dict,
+) -> None:
+    """
+    Moves all files of a given extension (e.g. `*.mod`, `.*vmr`, `*.mod`) from a src folder to specified destinations.
+    `dest_dict` keys should be formatted as `.<file_extension>` and values should be destination path.
+    """
+
+    for ext, dest in zip(dest_dict.keys(), dest_dict.values()):
+        glob_pattern = f'*{ext}'
+        filter_move_files(src_path, glob_pattern, dest)       
+
+    
