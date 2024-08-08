@@ -1,10 +1,10 @@
 import h5py
 import pandas as pd
 import numpy as np
-import os
 import shutil
 
 from pathlib import Path
+from datetime import datetime
 
 import timeutils
 
@@ -33,26 +33,32 @@ def csv_get_col(f, col_num, sep=','):
 def preprocess_pressure_file(input_pressure_file: str, 
                              out_dir_name: str,
                              out_file_name: str,
-                             pressure_correction: any) -> None:
+                             pressure_correction: any,
+                             v: bool = False) -> None:
 
     # create directories needed in output file path
-    Path(out_dir_name).mkdir(parents=True, exist_ok=True)
+    out_dir = Path(out_dir_name)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    out_f = os.path.join(out_dir_name, out_file_name)
+    out_file = out_dir/out_file_name
 
-    parse_pressure_file(input_pressure_file, out_f, pressure_correction=pressure_correction)
+    parse_pressure_file(input_pressure_file, out_file, pressure_correction=pressure_correction, v=v)
 
 
 def parse_pressure_file(
         input_file_path: str, 
+        # input_file_type: str,
         output_file_path: str, 
         pressure_correction: None = None,
         in_sep: str ='\s\s+',
         out_sep: str ='\t', 
         in_col_names: None = None, 
-        out_col_names: None = None) -> None:
+        out_col_names: None = None,
+        v: bool = False) -> None:
     """Takes aws .lst file as input and creates a .csv file with data necessary for retrieval algorithm. Pre
     """
+    
+    out_file = Path(output_file_path)
 
     # set default values for mutable type arguments 
     if in_col_names == None:
@@ -96,9 +102,12 @@ def parse_pressure_file(
                                  columns=[out_col_names['date'], out_col_names['time'], out_col_names['pressure']])
     
     # export
-    _out_pressure.to_csv(output_file_path, index=False, sep=out_sep)
+    _out_pressure.to_csv(out_file, index=False, sep=out_sep)
 
-    print(f'{output_file_path} pressure file written.')
+    print(f'{out_file.name} pressure file written {datetime.now().time()}.')
+
+    if v:
+        print(f'Pressure file location: {out_file}')
 
 
 def filter_move_files(

@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.2"
-content_hash = "sha256:435c2bd4cf9e23980a515cf4694cbf35ebbff877e8a6b5897c621aca5be2fb13"
+content_hash = "sha256:7872ca480d9a7138ceb62a2d8b67eb23e9095e86a2a3af443fba70685c2ce338"
 
 [[package]]
 name = "anyio"
@@ -335,6 +335,15 @@ groups = ["default"]
 files = [
     {file = "defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"},
     {file = "defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69"},
+]
+
+[[package]]
+name = "dotenv"
+version = "0.0.5"
+summary = "Handle .env files"
+groups = ["default"]
+files = [
+    {file = "dotenv-0.0.5.tar.gz", hash = "sha256:b58d2ab3f83dbd4f8a362b21158a606bee87317a9444485566b3c8f0af847091"},
 ]
 
 [[package]]

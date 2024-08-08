@@ -52,7 +52,7 @@ def show_keys(
 def compare_single_day(
         filepaths: dict,
         col_numbers: dict,
-        date: str,
+        datestring: str,
         offset: float = 0.0033
         ) -> None:
     """
@@ -119,6 +119,6 @@ def compare_single_day(
 
     # plot
     title = f'PROFFASTPylot processing results comparison\n \
-                    Sodankylä EM27SUN SN122 {date}\n \
+                    Sodankylä EM27SUN SN122 {datestring}\n \
                     Scalar pressure offest of -0.29650 applied'
     plot.compare_all_timestamps(timeseries, disagreeing_timestamps, epoch_start_date, title, 'XCH4', y_test_offset=offset) 
