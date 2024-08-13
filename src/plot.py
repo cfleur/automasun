@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-import timeutils
+from . import timeutils
 
 
 def compare_all_timestamps(timeseries: dict,
