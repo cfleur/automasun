@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import datetime
 
-import ioutils 
-import timeutils
-import plot
+from . import ioutils 
+from . import timeutils
+from . import plot
 
 # TODO: remove module reloads when done
 import importlib
@@ -13,7 +13,8 @@ importlib.reload(timeutils)
 importlib.reload(ioutils)
 
 
-def print_csv_h5_keys(path, sep=',') -> None:
+def print_csv_h5_keys(_path, sep=',') -> None:
+    path = str(_path)
     file_type = str.split(path, '.')[-1]
 
     if file_type == 'csv':
@@ -53,6 +54,8 @@ def compare_single_day(
         filepaths: dict,
         col_numbers: dict,
         datestring: str,
+        y_axis_lab: str,
+        plot_title: str,
         offset: float = 0.0033
         ) -> None:
     """
@@ -118,7 +121,4 @@ def compare_single_day(
         }
 
     # plot
-    title = f'PROFFASTPylot processing results comparison\n \
-                    Sodankylä EM27SUN SN122 {datestring}\n \
-                    Scalar pressure offest of -0.29650 applied'
-    plot.compare_all_timestamps(timeseries, disagreeing_timestamps, epoch_start_date, title, 'XCH4', y_test_offset=offset) 
+    plot.compare_all_timestamps(timeseries, disagreeing_timestamps, epoch_start_date, plot_title, y_axis_lab, y_test_offset=offset) 

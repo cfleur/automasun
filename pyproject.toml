@@ -6,11 +6,9 @@ authors = [
     {name = "", email = ""},
 ]
 dependencies = [
-    "jupyterlab>=4.2.2",
     "pandas>=2.2.2",
     "matplotlib>=3.9.0",
     "h5py>=3.11.0",
-    "dotenv>=0.0.5",
 ]
 requires-python = "==3.10.*"
 readme = "README.md"

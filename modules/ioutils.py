@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 
-import timeutils
+from . import timeutils
 
 
 def h5_get_keys(f):
