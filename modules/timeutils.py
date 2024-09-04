@@ -58,7 +58,7 @@ def timestamp_to_date_time(
         list of timestamps to parse
     sep : str
         separator of date and time
-            
+
     Returns
     -------
     pd.DataFrame
@@ -67,13 +67,14 @@ def timestamp_to_date_time(
         time   str 
         =====  ===========
     """
-
     _date = []
     _time = []
-
     for ts in timestamps:
         ts_items = ts.split(sep)
-        _date.append(str(ts_items[0]))
-        _time.append(str(ts_items[1]))
-
+        d = str(ts_items[0]).split('-')
+        _date.append(f'{d[0]}.{d[1]}.{d[2]}')
+        # date format: yyyy.mm.dd
+        _time.append(f'{str(ts_items[1])}:00')
+        # time format: hh:mm:ss
+        # 00 added as granularity is in minutes for this data
     return pd.DataFrame(np.array([_date, _time]).T, columns=['date','time'])
