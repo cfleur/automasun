@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import shutil
 
-from pathlib import Path
+from pathlib import Path, PosixPath
 from datetime import datetime
 from typing import Union
 
@@ -31,36 +31,18 @@ def csv_get_col(f, col_num, sep=','):
     return df[df.columns[col_num]]
 
 
-def preprocess_pressure_file(
-        input_pressure_file: str,
-        out_dir_name: str,
-        out_file_name: str,
-        pressure_correction: Union[None, float, list] = None,
-        in_sep: Union[None, str] = None,
-        v: bool = False
-) -> None:
-    input_file_type = str(input_pressure_file).split(sep='.')[-1]
-
-    # create directories needed in output file path
-    out_dir = Path(out_dir_name)
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    out_file = out_dir/out_file_name
-
-    parse_pressure_file(
-        input_pressure_file,
-        input_file_type,
-        out_file,
-        pressure_correction=pressure_correction,
-        in_sep=in_sep,
-        v=v
-    )
+def create_file_path(
+        dir_path: Union[str, PosixPath],
+        file_name: str,
+) -> PosixPath:
+    dir = Path(dir_path)
+    dir.mkdir(parents=True, exist_ok=True)
+    return dir/file_name
 
 
 def parse_pressure_file(
-        input_file_path: str, 
-        input_file_type: str,
-        output_file_path: str, 
+        input_file_path: Union[str, PosixPath],
+        output_file_path: Union[str, PosixPath],
         pressure_correction: Union[None, float, list] = None,
         in_sep: Union[None, str] = None,
         out_sep: str ='\t', 
@@ -73,7 +55,7 @@ def parse_pressure_file(
     creates a .csv file with data necessary for retrieval algorithm.
     """
     if v:
-        print('Creating formatted pressure file.')
+        print('*'*4,'Creating formatted pressure file.')
     # set default values for mutable type arguments 
     if in_col_names == None:
         in_col_names = {}
@@ -83,7 +65,7 @@ def parse_pressure_file(
             'time': 'UTCtime', 
             'pressure': 'BaroTHB40'
         }
-    
+    input_file_type = str(input_file_path).split(sep='.')[-1]
     if input_file_type == 'lst':
         if in_sep == None:
             in_sep = '\s\s+'
@@ -136,13 +118,11 @@ def parse_pressure_file(
         )
 
     # export
-    out_file = Path(output_file_path)
-    _out_pressure.to_csv(out_file, index=False, sep=out_sep)
-
+    _out_pressure.to_csv(output_file_path, index=False, sep=out_sep)
     if not q:
-        print(f'{out_file.name} pressure file written {datetime.now().time()}.')
+        print(f'{output_file_path.name} pressure file written {datetime.now().time()}.')
     if v:
-        print(f'Pressure file location: {out_file}')
+        print(f'Pressure file location: {output_file_path}')
 
 
 def apply_pressure_correction(
