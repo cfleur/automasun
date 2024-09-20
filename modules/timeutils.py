@@ -1,7 +1,23 @@
 import numpy as np
 import pandas as pd
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date as Date
+
+
+def date_in_range(
+        input_date: Date,
+        start_date: Date,
+        end_date: Date
+) -> bool:
+    """
+    Checks if a date is equal or later than start_date,
+    and equal or earlier than end_date.
+    """
+    if start_date > end_date:
+        raise ValueError(
+            f"start_date {start_date} must be earlier or equal to end_date {end_date}."
+        )
+    return input_date >= start_date and input_date <= end_date
 
 
 def epoch_to_date(time_data, epoch_start_date):
