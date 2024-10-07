@@ -1,12 +1,11 @@
-import h5py
 import shutil
 import yaml
-import pandas as pd
-import numpy as np
-
-from pathlib import Path, PosixPath
 from datetime import datetime, date as Date
+from pathlib import Path, PosixPath
 from typing import Union, List
+
+import h5py
+import pandas as pd
 
 from . import timeutils
 
@@ -43,9 +42,12 @@ def create_file_path(
 
 def get_file_extension(
         file_path_or_name: Union[str, PosixPath],
-        v: bool = True
+        v: bool = False
 ) -> str:
-    return str(file_path_or_name).split(sep='.')[-1]
+    extension = str(file_path_or_name).rsplit(sep='.', maxsplit=1)[-1]
+    if v == True:
+        print(f'File extension: {extension}')
+    return extension
 
 
 def read_yaml_config(
@@ -143,7 +145,7 @@ def extract_date_from_fname(
         month = date_string[2:4]
         day = date_string[4:6]
     elif file_type == 'csv':
-        # datalogger-<location>-yyyymmdd.csv
+        # prefix-<location>-yyyymmdd.csv
         date_string = file_name.split('.')[0].split('-')[2]
         year = date_string[0:4]
         month = date_string[4:6]
@@ -175,10 +177,10 @@ def generate_fname_from_date(
         date_string = date.strftime("%y%m%d")
         file_name = f'{date_string}_PTU300_log.txt'
     elif file_type == 'csv':
-        # datalogger-<location>-yyyymmdd.csv
+        # prefix-<location>-yyyymmdd.csv
         date_string = date.strftime("%Y%m%d")
         if location is not None:
-            file_name = f'datalogger-{location}-{date_string}.csv'
+            file_name = f'pressure-{location}-{date_string}.csv'
         else:
             raise ValueError(
                 'Sensor location value needed for generating csv file name.'

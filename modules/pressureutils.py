@@ -1,11 +1,12 @@
+from datetime import datetime, timedelta
+from pathlib import PosixPath, Path
+from typing import Union, List
+
 import pandas as pd
 import numpy as np
 
-from typing import Union, List
-from pathlib import PosixPath, Path
-from datetime import datetime, timedelta
-from . import timeutils
 from . import ioutils
+from . import timeutils
 
 
 def parse_pressure_file(
@@ -19,7 +20,7 @@ def parse_pressure_file(
         v: bool = False,
         q: bool = False
 ) -> None:
-    """Takes aws .lst or txt log pressure file as input and
+    """Takes aws .lst or .txt log pressure file as input and
     creates a .csv file with data necessary for retrieval algorithm.
     """
     if v:
@@ -29,12 +30,11 @@ def parse_pressure_file(
         in_col_names = {}
     if out_col_names is None:
         out_col_names = {
-            'date': 'UTCdate',
-            'time': 'UTCtime',
-            'pressure': 'BaroTHB40'
+            'date': 'UTCdate_____',
+            'time': 'UTCtime___',
+            'pressure': 'BaroYoung'
         }
-    #TODO: use function get_file_extension
-    input_file_type = str(input_file_path).split(sep='.')[-1]
+    input_file_type = ioutils.get_file_extension(input_file_path)
     if input_file_type == 'lst':
         if in_sep is None:
             in_sep = '\s\s+'
@@ -190,3 +190,39 @@ def generate_unparsed_pressure_file_list(
         in output_file_names
     ]
     return unparsed_pressure_paths, output_paths
+
+
+def parse_pressure_folder(
+        instrument: str,
+        location: str,
+        config_file: Union[str, PosixPath],
+        v: bool = False,
+        vv: bool = False
+) -> None:
+    """
+    Parses all unparsed pressure files in a folder. Output is written to output folder
+    defined in yaml config file.
+    """
+    unparsed_pressure_paths, output_paths = generate_unparsed_pressure_file_list(
+        instrument,
+        location,
+        config_file,
+        v=v, vv=vv
+    )
+    for in_path, out_path in zip(unparsed_pressure_paths, output_paths):
+        try:
+            parse_pressure_file(
+                in_path,
+                out_path,
+                out_sep=',',
+                out_col_names = {
+                    'date': 'Date',
+                    'time': 'TimeUTC',
+                    'pressure': 'BaroTHB40'
+                }
+            )
+        except Exception as exc:
+            print(
+                f"* Failed to parse {in_path}:\n",
+                exc
+            )
