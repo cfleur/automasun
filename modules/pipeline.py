@@ -8,8 +8,9 @@ from . import pressureutils
 
 def prepare_pressure() -> None:
     env = Dotenv(".env")
-    config_folder = Path(env.get('CONFIG_FOLDER'))
+    config_folder = Path(env.get('MAIN_CONFIG_DIR'))
     prepare_pressure_config_file = config_folder/"FMIpipelineutils/prepare_pressure.yml"
+    # TODO: get config keys and loop through all instruments and locations
     instrument = 'SN122'
     location = 'wetland'
     pressureutils.parse_pressure_folder(instrument, location, prepare_pressure_config_file)

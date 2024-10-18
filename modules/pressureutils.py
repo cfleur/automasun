@@ -35,7 +35,7 @@ def parse_pressure_file(
             'pressure': 'BaroYoung'
         }
     input_file_type = ioutils.get_file_extension(input_file_path)
-    if input_file_type == 'lst':
+    if input_file_type == 'lst':    # automatic weather station (aws) file
         if in_sep is None:
             in_sep = '\s\s+'
         df = pd.read_csv(input_file_path, sep=in_sep, engine='python').drop(0)
@@ -60,9 +60,11 @@ def parse_pressure_file(
                 out_col_names['time'],
                 out_col_names['pressure']
             ])
-    elif input_file_type == 'txt':
+    elif input_file_type == 'txt':  # em27 case log file
         if in_sep is None:
             in_sep = '\s+'
+        # TODO: preprocess case log file to add a space after all '='
+        # to avoid a formatting bug and incorrect column numbers
         df = pd.read_csv(input_file_path, sep=in_sep, engine='python', skiprows=2, header=None)
         _pressure = df[9]
         _out_pressure = pd.DataFrame(
@@ -104,27 +106,23 @@ def apply_pressure_correction(
             print('No pressure correction applied.')
     elif type(pressure_correction) == float:
         # subtract the pressure_correction
-        # from each measurement if offest is a scalar
+        # from each measurement if offset is a scalar
         pressure_vector += pressure_correction
         if not q:
             print(f'Scalar pressure offest of {pressure_correction:.5f} applied.')
+    elif len(pressure_correction) == len(pressure_vector):
+        # subtract the pressure_correction vector from the
+        # pressure measurement vector if pressure_correction is a vector
+        pressure_vector += pressure_correction
+        if not q:
+            print('Vector pressure correction applied.')
     else:
-        try:
-            len(pressure_correction) == len(pressure_vector)
-            # subtract the pressure_correction vector from the
-            # pressure measurement vector if pressure_correction is a vector
-            pressure_vector += pressure_correction
-            if not q:
-                print('Vector pressure correction applied.')
-        except:
-            raise ValueError(
-                'Pressure correction must be either None (default), a float,'
-                ' or an array of floats of same length as number of pressure measurements.'
-            )
+        raise ValueError(
+            'Pressure correction must be either None (default), a float,'
+            ' or an array of floats of same length as number of pressure measurements.'
+        )
     return pressure_vector
 
-import importlib
-importlib.reload(ioutils)
 
 def generate_unparsed_pressure_file_list(
         instrument: str,
