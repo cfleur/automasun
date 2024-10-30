@@ -38,9 +38,9 @@ def apply_pressure_correction(
 
 
 def generate_unparsed_pressure_file_list(
-        instrument: str,
-        location: str,
         config_file: Union[str, PosixPath],
+        pressure_config_section,
+        location: str,
         v: bool = False,
         vv: bool = False
 ) -> List[Union[str, PosixPath]]:
@@ -49,18 +49,18 @@ def generate_unparsed_pressure_file_list(
     compares the contents based on dates in the file names.
     Returns a list of unparsed pressure files.
     """
-    config = ioutils.read_yaml_config(config_file)
-    raw_pressure_folder = config[instrument][location]['raw_pressure_folder']
-    parsed_pressure_folder = config[instrument][location]['parsed_pressure_folder']
+    pressure_config = ioutils.read_yaml_config(config_file)[pressure_config_section]
+    raw_pressure_folder = pressure_config[location]['raw_pressure_folder']
+    parsed_pressure_folder = pressure_config[location]['parsed_pressure_folder']
     start_date = datetime.strptime(
-        config[instrument][location]['start_date'],
+        pressure_config[location]['start_date'],
         "%Y-%m-%d"
     ).date()
-    if config[instrument][location]['end_date'] is None:
+    if pressure_config[location]['end_date'] is None:
         end_date = datetime.now().date() - timedelta(days=1)
     else:
         end_date = datetime.strptime(
-            config[instrument][location]['end_date'],
+            pressure_config[location]['end_date'],
             "%Y-%m-%d"
     ).date()
     raw_pressure_dates = ioutils.generate_date_list(
@@ -83,11 +83,12 @@ def generate_unparsed_pressure_file_list(
     )
     unparsed_pressure_files = ioutils.generate_file_list(
         unparsed_pressure_dates,
-        'txt'
+        pressure_config[location]["raw_file_extension"]
     )
     output_file_names = ioutils.generate_file_list(
         unparsed_pressure_dates,
-        'csv',
+        'csv',  # keep as "csv" to help keep COCCON processing same format
+                # as parsed pressure files are sent to KIT
         location
     )
     unparsed_pressure_paths = [
@@ -191,9 +192,9 @@ def parse_pressure_file(
 
 
 def parse_pressure_folder(
-        instrument: str,
-        location: str,
         config_file: Union[str, PosixPath],
+        pressure_config_section: str,
+        location: str,
         v: bool = False,
         vv: bool = False
 ) -> None:
@@ -202,11 +203,16 @@ def parse_pressure_folder(
     defined in yaml config file.
     """
     unparsed_pressure_paths, output_paths = generate_unparsed_pressure_file_list(
-        instrument,
-        location,
         config_file,
+        pressure_config_section,
+        location,
         v=v, vv=vv
     )
+    print(
+        f'******\nFound {len(unparsed_pressure_paths)} unparsed pressure files'
+        f'for location < {location} >.\n**'
+    )
+    file_count = 0
     for in_path, out_path in zip(unparsed_pressure_paths, output_paths):
         try:
             parse_pressure_file(
@@ -219,8 +225,12 @@ def parse_pressure_folder(
                     'pressure': 'BaroTHB40'
                 }
             )
+            file_count += 1
         except Exception as exc:
             print(
                 f"* Failed to parse {in_path}:\n",
                 exc
             )
+    print(
+        f'**\nParsed {file_count} pressure files for location < {location} >.\n******'
+    )

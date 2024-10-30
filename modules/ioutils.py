@@ -57,6 +57,14 @@ def read_yaml_config(
         return yaml.load(f, Loader=yaml.FullLoader)
 
 
+def get_yaml_section_keys(
+    config_file_path: Union[str, PosixPath],
+    section: str
+) -> list:
+    config_section: dict = read_yaml_config(config_file_path)[section]
+    return list(config_section.keys())
+
+
 def filter_move_files(
         src_path: str,
         glob_pattern: str,
