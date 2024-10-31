@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from io import StringIO
 from pathlib import PosixPath, Path
 from typing import Union, List
 
@@ -148,7 +149,10 @@ def parse_pressure_file(
             np.array([
                 timestamp_df['date'],
                 timestamp_df['time'],
-                apply_pressure_correction(_pressure, pressure_correction, q)
+                apply_pressure_correction(
+                    _pressure, pressure_correction,
+                    q
+                )
             ]).T,
             columns=[
                 out_col_names['date'],
@@ -158,15 +162,24 @@ def parse_pressure_file(
     elif input_file_type == 'txt':  # em27 case log file
         if in_sep is None:
             in_sep = '\s+'
-        # TODO: preprocess case log file to add a space after all '='
-        # to avoid a formatting bug and incorrect column numbers
-        df = pd.read_csv(input_file_path, sep=in_sep, engine='python', skiprows=2, header=None)
+        df = pd.read_csv(
+            preprocess_case_log_file(
+                input_file_path
+            ),
+            sep=in_sep,
+            engine='python',
+            skiprows=2,
+            header=None
+        )
         _pressure = df[9]
         _out_pressure = pd.DataFrame(
             np.array([
                 df[0],
                 df[1],
-                apply_pressure_correction(_pressure, pressure_correction, q),
+                apply_pressure_correction(
+                    _pressure, pressure_correction,
+                    q
+                ),
                 df[12],
                 df[15]
             ]).T,
@@ -210,7 +223,7 @@ def parse_pressure_folder(
     )
     print(
         f'******\nFound {len(unparsed_pressure_paths)} unparsed pressure files'
-        f'for location < {location} >.\n**'
+        f'for location « {location} ».\n**'
     )
     file_count = 0
     for in_path, out_path in zip(unparsed_pressure_paths, output_paths):
@@ -232,5 +245,16 @@ def parse_pressure_folder(
                 exc
             )
     print(
-        f'**\nParsed {file_count} pressure files for location < {location} >.\n******'
+        f'**\nParsed {file_count} pressure files for location « {location} ».\n******'
     )
+
+
+def preprocess_case_log_file(
+        file_path: Union[str, PosixPath]
+) -> StringIO:
+    """
+    Returns a StringIO object in order to avoid writing a partially processed pressure file.
+    """
+    with open(file_path, 'r') as file:
+        data = file.read()
+    return StringIO(data.replace('=', ' '))
