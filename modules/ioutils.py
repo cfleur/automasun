@@ -10,59 +10,22 @@ import pandas as pd
 from . import timeutils
 
 
-def h5_get_keys(f):
-    with h5py.File(f, 'r') as file:
-        return [ k for k in file.keys() ]
+##############################################################
+################### Working with files #######################
+##############################################################
 
-
-def h5_get_col(f, col_num):
-    with h5py.File(f, 'r') as file:
-        a_group_key = list(file.keys())[col_num]
-        return list(file[a_group_key])
-
-
-def csv_get_keys(f, sep=','):
-    df = pd.read_csv(f, sep=sep)
-    return df.columns
-
-
-def csv_get_col(f, col_num, sep=','):
-    df = pd.read_csv(f, sep=sep)
-    return df[df.columns[col_num]]
-
-
-def create_file_path(
-        dir_path: Union[str, PosixPath],
-        file_name: str,
-) -> PosixPath:
-    dir = Path(dir_path)
-    dir.mkdir(parents=True, exist_ok=True)
-    return dir/file_name
-
-
-def get_file_extension(
-        file_path_or_name: Union[str, PosixPath],
-        v: bool = False
-) -> str:
-    extension = str(file_path_or_name).rsplit(sep='.', maxsplit=1)[-1]
-    if v == True:
-        print(f'File extension: {extension}')
-    return extension
-
-
-def read_yaml_config(
-        config_file_path: Union[str, PosixPath]
-) -> dict:
-    with open(config_file_path, 'r') as f:
-        return yaml.load(f, Loader=yaml.FullLoader)
-
-
-def get_yaml_section_keys(
-    config_file_path: Union[str, PosixPath],
-    section: str
-) -> list:
-    config_section: dict = read_yaml_config(config_file_path)[section]
-    return list(config_section.keys())
+def separate_mod_vmr_map(
+        src_path: str,
+        dest_dict: dict,
+) -> None:
+    """
+    Moves all files of a given extension (e.g. `*.mod`, `.*vmr`, `*.mod`) from a src folder to specified destinations.
+    `dest_dict` keys should be formatted as `.<file_extension>` and values should be destination path.
+    """
+    # TODO: generlise naming (does not have to be vmr, mod, map)
+    for ext, dest in zip(dest_dict.keys(), dest_dict.values()):
+        glob_pattern = f'*{ext}'
+        filter_move_files(src_path, glob_pattern, dest)       
 
 
 def filter_move_files(
@@ -96,75 +59,64 @@ def filter_move_files(
         shutil.move(file, dest_path)
 
     print(f'Moved {file_count} files matching pattern {glob_pattern}')
-    
 
-def separate_mod_vmr_map(
-        src_path: str,
-        dest_dict: dict,
-) -> None:
+
+def create_file_path(
+        dir_path: Union[str, PosixPath],
+        file_name: str,
+) -> PosixPath:
     """
-    Moves all files of a given extension (e.g. `*.mod`, `.*vmr`, `*.mod`) from a src folder to specified destinations.
-    `dest_dict` keys should be formatted as `.<file_extension>` and values should be destination path.
+    Returns a file path within a directory that exists.
     """
+    dir = Path(dir_path)
+    dir.mkdir(parents=True, exist_ok=True)
+    return dir/file_name
 
-    for ext, dest in zip(dest_dict.keys(), dest_dict.values()):
-        glob_pattern = f'*{ext}'
-        filter_move_files(src_path, glob_pattern, dest)       
 
-
-def read_file_names(
-        folder_path: Union[str, PosixPath],
+def get_file_extension(
+        file_path_or_name: Union[str, PosixPath],
         v: bool = False
+) -> str:
+    """
+    Returns the extension part of a file name.
+    """
+    extension = str(file_path_or_name).rsplit(sep='.', maxsplit=1)[-1]
+    if v == True:
+        print(f'File extension: {extension}')
+    return extension
+
+
+##############################################################
+############## Working with file name dates ##################
+##############################################################
+
+
+def generate_file_list_from_dates(
+        date_list: Union[list, set],
+        file_type: str,
+        location: Union[str, None] = None,
+        v: bool = False,
 ) -> List[str]:
     """
-    Returns a list of names of files in a folder.
+    Generates a list of file names from a list of dates
+    for a given file type.
     """
-    if v:
-        print(f'Reading file names from {folder_path}')
-    file_names = [
-        file.name for file in Path(folder_path).glob('*')
-        if not file.is_dir()
-    ]
-    if v:
-        print(file_names)
-    return file_names
-
-
-def extract_date_from_fname(
-        file_name: str
-) -> Date:
-    """
-    Parses a date from a filename.
-
-    Note: custom parsing instead of datetime's strptime for more
-    flexibility in file names.
-    """
-    file_type = get_file_extension(file_name)
-    if file_type == 'lst':
-        # aws_yyyymmdd.lst
-        date_string = file_name.split('.')[0].split('_')[1]
-        year = date_string[0:4]
-        month = date_string[4:6]
-        day = date_string[6:8]
-    elif file_type == 'txt':
-        # yymmdd_PTU300_log.txt or yymmdd_PTU300_error_log.txt
-        date_string = file_name.split('.')[0].split('_')[0]
-        year = '20' + date_string[0:2]
-        month = date_string[2:4]
-        day = date_string[4:6]
-    elif file_type == 'csv':
-        # prefix-<location>-yyyymmdd.csv
-        date_string = file_name.split('.')[0].split('-')[2]
-        year = date_string[0:4]
-        month = date_string[4:6]
-        day = date_string[6:8]
+    if isinstance(date_list, set):
+        date_list = list(date_list)
+    elif isinstance(date_list, list):
+        pass
     else:
         raise TypeError(
-            f'Pressure file type \'{file_type}\' not supported.'
-            ' Supported types: .lst, .txt, .csv'
+            f'date_list was {type(date_list)} but must be list or set type.'
         )
-    date = datetime(int(year), int(month), int(day)).date()
-    return date
+    file_list = []
+    for d in date_list:
+        file_list.append(
+            generate_fname_from_date(
+                d, file_type, location=location, v=v
+            )
+        )
+    return sorted(file_list)
 
 
 def generate_fname_from_date(
@@ -205,35 +157,7 @@ def generate_fname_from_date(
     return file_name
 
 
-def generate_file_list(
-        date_list: Union[list, set],
-        file_type: str,
-        location: Union[str, None] = None,
-        v: bool = False,
-) -> List[str]:
-    """
-    Generates a list of file names from a list of dates
-    for a given file type.
-    """
-    if isinstance(date_list, set):
-        date_list = list(date_list)
-    elif isinstance(date_list, list):
-        pass
-    else:
-        raise TypeError(
-            f'date_list was {type(date_list)} but must be list or set type.'
-        )
-    file_list = []
-    for d in date_list:
-        file_list.append(
-            generate_fname_from_date(
-                d, file_type, location=location, v=v
-            )
-        )
-    return sorted(file_list)
-
-
-def generate_date_list(
+def generate_date_list_from_folder(
         folder_path: Union[str, PosixPath],
         start_date: Date,
         end_date: Date,
@@ -261,6 +185,43 @@ def generate_date_list(
     return sorted(date_list)
 
 
+def extract_date_from_fname(
+        file_name: str
+) -> Date:
+    """
+    Parses a date from a filename.
+
+    Note: custom parsing instead of datetime's strptime for more
+    flexibility in file names.
+    """
+    file_type = get_file_extension(file_name)
+    if file_type == 'lst':
+        # aws_yyyymmdd.lst
+        date_string = file_name.split('.')[0].split('_')[1]
+        year = date_string[0:4]
+        month = date_string[4:6]
+        day = date_string[6:8]
+    elif file_type == 'txt':
+        # yymmdd_PTU300_log.txt or yymmdd_PTU300_error_log.txt
+        date_string = file_name.split('.')[0].split('_')[0]
+        year = '20' + date_string[0:2]
+        month = date_string[2:4]
+        day = date_string[4:6]
+    elif file_type == 'csv':
+        # prefix-<location>-yyyymmdd.csv
+        date_string = file_name.split('.')[0].split('-')[2]
+        year = date_string[0:4]
+        month = date_string[4:6]
+        day = date_string[6:8]
+    else:
+        raise TypeError(
+            f'Pressure file type \'{file_type}\' not supported.'
+            ' Supported types: .lst, .txt, .csv'
+        )
+    date = datetime(int(year), int(month), int(day)).date()
+    return date
+
+
 def generate_set_difference(
         s1: set,
         s2: set
@@ -270,3 +231,98 @@ def generate_set_difference(
     s1 might be a raw data folder and s2 might be a processed data folder.
     """
     return s1.difference(s2)
+
+
+def read_file_names(
+        folder_path: Union[str, PosixPath],
+        v: bool = False
+) -> List[str]:
+    """
+    Returns a list of names of files in a folder.
+    """
+    if v:
+        print(f'Reading file names from {folder_path}')
+    file_names = [
+        file.name for file in Path(folder_path).glob('*')
+        if not file.is_dir()
+    ]
+    if v:
+        print(file_names)
+    return file_names
+
+
+##############################################################
+############# Working with YAML config file ##################
+##############################################################
+
+
+def get_yaml_section_keys(
+    config_file_path: Union[str, PosixPath],
+    section: str
+) -> list:
+    """
+    Returns all the keys within a specific section of YAML config file.
+    """
+    config_section: dict = read_yaml_config(config_file_path)[section]
+    return list(config_section.keys())
+
+
+def read_yaml_config(
+        config_file_path: Union[str, PosixPath]
+) -> dict:
+    """
+    Reads .yaml config file and returns data as a dictionary.
+    """
+    with open(config_file_path, 'r') as f:
+        return yaml.load(f, Loader=yaml.FullLoader)
+
+
+##############################################################
+############## CSV and HDF file operations ###################
+##############################################################
+
+
+def get_csv_col(
+        file: Union[str, PosixPath],
+        col_num: int,
+        sep: str = ','
+    ) -> pd.Series:
+    """
+    Returns a column from a csv file specified by column number.
+    """
+    df = pd.read_csv(file, sep=sep)
+    return df[df.columns[col_num]]
+
+
+def get_csv_keys(
+        file: Union[str, PosixPath],
+        sep: str = ','
+    ) -> pd.Index:
+    """
+    Returns the keys from a csv file header as a pandas index.
+    """
+    df = pd.read_csv(file, sep=sep)
+    return df.columns
+
+
+def get_h5_col(
+        file: Union[str, PosixPath],
+        col_num: int
+    ):
+    """
+    Returns a column from an HDF file specified by a column number.
+    """
+    # TODO: column formats are heterogenious and sometimes this fails
+    with h5py.File(file, 'r') as f:
+        group_key = list(f.keys())[col_num]
+        return list(f[group_key])
+
+
+def get_h5_keys(
+        file: Union[str, PosixPath]
+    ):
+    """
+    Returns the keys from an HDF file.
+    """
+    with h5py.File(file, 'r') as f:
+        return [ k for k in f.keys() ]

@@ -64,14 +64,14 @@ def generate_unparsed_pressure_file_list(
             pressure_config[location]['end_date'],
             "%Y-%m-%d"
     ).date()
-    raw_pressure_dates = ioutils.generate_date_list(
+    raw_pressure_dates = ioutils.generate_date_list_from_folder(
         raw_pressure_folder,
         start_date=start_date,
         end_date=end_date,
         v=v,
         vv=vv
     )
-    parsed_pressure_dates = ioutils.generate_date_list(
+    parsed_pressure_dates = ioutils.generate_date_list_from_folder(
         parsed_pressure_folder,
         start_date=start_date,
         end_date=end_date,
@@ -82,11 +82,11 @@ def generate_unparsed_pressure_file_list(
         set(raw_pressure_dates),
         set(parsed_pressure_dates)
     )
-    unparsed_pressure_files = ioutils.generate_file_list(
+    unparsed_pressure_files = ioutils.generate_file_list_from_dates(
         unparsed_pressure_dates,
         pressure_config[location]["raw_file_extension"]
     )
-    output_file_names = ioutils.generate_file_list(
+    output_file_names = ioutils.generate_file_list_from_dates(
         unparsed_pressure_dates,
         'csv',  # keep as "csv" to help keep COCCON processing same format
                 # as parsed pressure files are sent to KIT
@@ -253,6 +253,14 @@ def preprocess_case_log_file(
         file_path: Union[str, PosixPath]
 ) -> StringIO:
     """
+    Replaces equal signs in case log file to prevent double digit temperature
+    readings from changing the number of columns in the file.
+    Without preprocessing label and value are not separated by a space:
+    T=-10
+    With preprocessing label and value are separated by a space:
+    T -10
+    After preprocessing "-10" will be read into a dataframe as a numerical value for temperature.
+    This preprocessing allows to sure pandas read_csv with separator '\s+' (one or more spaces).
     Returns a StringIO object in order to avoid writing a partially processed pressure file.
     """
     with open(file_path, 'r') as file:
