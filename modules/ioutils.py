@@ -64,13 +64,16 @@ def filter_move_files(
 def create_file_path(
         dir_path: Union[str, PosixPath],
         file_name: str,
+        create_dir: bool = True
 ) -> PosixPath:
     """
-    Returns a file path within a directory that exists.
+    Returns a file path within a directory that exists. May create a directory but
+    does not create a file.
     """
-    dir = Path(dir_path)
-    dir.mkdir(parents=True, exist_ok=True)
-    return dir/file_name
+    _dir = Path(dir_path)
+    if create_dir:
+        _dir.mkdir(parents=True, exist_ok=True)
+    return _dir/file_name
 
 
 def get_file_extension(
@@ -84,6 +87,24 @@ def get_file_extension(
     if v == True:
         print(f'File extension: {extension}')
     return extension
+
+
+def read_file_names(
+        folder_path: Union[str, PosixPath],
+        v: bool = False
+) -> List[str]:
+    """
+    Returns a list of names of files in a folder.
+    """
+    if v:
+        print(f'Reading file names from {folder_path}')
+    file_names = [
+        file.name for file in Path(folder_path).glob('*')
+        if not file.is_dir()
+    ]
+    if v:
+        print(file_names)
+    return file_names
 
 
 ##############################################################
@@ -146,7 +167,7 @@ def generate_fname_from_date(
                 'Sensor location value needed for generating csv file name.'
             )
     else:
-        raise TypeError(
+        raise ValueError(
             f'Pressure file type \'{file_type}\' not supported.'
             ' Supported types: .lst, .txt, .csv'
         )
@@ -203,6 +224,8 @@ def extract_date_from_fname(
         day = date_string[6:8]
     elif file_type == 'txt':
         # yymmdd_PTU300_log.txt or yymmdd_PTU300_error_log.txt
+        # if "error" in name, date will be extracted twice, however
+        # due to set operations, dates are unique and are only counted once
         date_string = file_name.split('.')[0].split('_')[0]
         year = '20' + date_string[0:2]
         month = date_string[2:4]
@@ -214,7 +237,7 @@ def extract_date_from_fname(
         month = date_string[4:6]
         day = date_string[6:8]
     else:
-        raise TypeError(
+        raise ValueError(
             f'Pressure file type \'{file_type}\' not supported.'
             ' Supported types: .lst, .txt, .csv'
         )
@@ -231,24 +254,6 @@ def generate_set_difference(
     s1 might be a raw data folder and s2 might be a processed data folder.
     """
     return s1.difference(s2)
-
-
-def read_file_names(
-        folder_path: Union[str, PosixPath],
-        v: bool = False
-) -> List[str]:
-    """
-    Returns a list of names of files in a folder.
-    """
-    if v:
-        print(f'Reading file names from {folder_path}')
-    file_names = [
-        file.name for file in Path(folder_path).glob('*')
-        if not file.is_dir()
-    ]
-    if v:
-        print(file_names)
-    return file_names
 
 
 ##############################################################
@@ -313,6 +318,7 @@ def get_h5_col(
     Returns a column from an HDF file specified by a column number.
     """
     # TODO: column formats are heterogenious and sometimes this fails
+    # TODO: rename to get_hdf_...
     with h5py.File(file, 'r') as f:
         group_key = list(f.keys())[col_num]
         return list(f[group_key])
@@ -324,5 +330,6 @@ def get_h5_keys(
     """
     Returns the keys from an HDF file.
     """
+    # TODO: rename to get_hdf_...
     with h5py.File(file, 'r') as f:
         return [ k for k in f.keys() ]
