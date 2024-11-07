@@ -34,7 +34,7 @@ LOCATIONS = (
 
 @pytest.fixture()
 def mock_files(
-        tmp_path_factory
+        tmp_path_factory: pytest.TempPathFactory
 ) -> list[Path]:
     files = []
     mock_dir = tmp_path_factory.mktemp("tmp_files")
@@ -76,7 +76,7 @@ def mock_config_dict():
 
 @pytest.fixture
 def mock_config(
-    tmp_path_factory: pytest.TempPathFactory
+        tmp_path_factory: pytest.TempPathFactory
 ) -> Path:
     content: str = (
         f"{LOCATIONS[0]}:\n"

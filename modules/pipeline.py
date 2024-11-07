@@ -7,6 +7,8 @@ from . import pressureutils, ioutils
 
 
 ENV = Dotenv(".env")
+# TODO: put env into repo root, not in super repo
+# TODO: remove matplotlib dependency
 CONFIG_FOLDER = Path(ENV.get('MAIN_CONFIG_DIR'))
 CONFIG_FILE = CONFIG_FOLDER/"FMIpipelineutils/fmi_pipeline_config.yml"
 

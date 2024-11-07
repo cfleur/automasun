@@ -96,6 +96,8 @@ def read_file_names(
     """
     Returns a list of names of files in a folder.
     """
+    # TODO: handle case where folder doesn't exits
+    # (current behaviour: returns an empty array, folder is created later)
     if v:
         print(f'Reading file names from {folder_path}')
     file_names = [
@@ -149,6 +151,8 @@ def generate_fname_from_date(
     """
     Generates a filename from a date
     """
+    # TODO: generates from given filename
+    # filename format is not hard coded
     if file_type == 'lst':
         # aws_yyyymmdd.lst
         date_string = date.strftime("%Y%m%d")

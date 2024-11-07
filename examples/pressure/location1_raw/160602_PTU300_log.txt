@@ -1,0 +1,8 @@
+PTU300 pressure, temperature and humidity data log 02.06.2016 00:00:05 UTC
+dd.mm.yyyy hh:mm:ss First Pressure    Second Pressure   Average Pressure Temperature Humidity
+02.06.2016 18:44:29 P1=   997.2 hPa   P2=   997.2 hPa   P=   997.2 hPa   T= -9.9 'C RH= 62.0 %RH 
+02.06.2016 18:44:43 P1=   997.2 hPa   P2=   997.2 hPa   P=   997.2 hPa   T= -9.9 'C RH= 62.3 %RH 
+02.06.2016 18:44:59 P1=   997.2 hPa   P2=   997.2 hPa   P=   997.2 hPa   T= -9.9 'C RH= 62.6 %RH 
+02.06.2016 18:45:14 P1=   997.2 hPa   P2=   997.2 hPa   P=   997.2 hPa   T=-10.0 'C RH= 62.8 %RH 
+02.06.2016 18:45:28 P1=   997.2 hPa   P2=   997.2 hPa   P=   997.2 hPa   T=-10.0 'C RH= 62.8 %RH 
+02.06.2016 18:45:44 P1=   997.2 hPa   P2=   997.2 hPa   P=   997.2 hPa   T=-10.0 'C RH= 62.6 %RH 

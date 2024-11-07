@@ -1,3 +1,5 @@
+import datetime as dt
+
 import numpy as np
 import pandas as pd
 
@@ -61,8 +63,39 @@ def datetime_to_clocktime(datetime_array):
     return clocktime_array
 
 
+def format_datestring(
+        original_date: str,
+        original_format: str,
+        desired_format: str
+) -> str:
+    """
+    Transforms a date string into another date string with different formatting
+
+    Parameters
+    ----------
+    original_datestring : str,
+        the original date, e.g. "01.09.2021"
+    original_format : str,
+        the format of the original date, e.g. "%d.%m.%Y"
+    desired_format : str
+        the format of the desired date, e.g. "%Y-%m-%d"
+
+    Returns
+    -------
+    str
+        e.g. "2021-09-01"
+    """
+    d = dt.datetime.strptime(
+        original_date,
+        original_format
+    )
+    return d.strftime(
+        desired_format
+    )
+
+
 def timestamp_to_date_time(
-        timestamps: list,
+        timestamps: list[str],
         sep: str = ' '
         ) -> pd.DataFrame:
     """Takes a list of timestamps and returns a 
@@ -87,10 +120,25 @@ def timestamp_to_date_time(
     _time = []
     for ts in timestamps:
         ts_items = ts.split(sep)
-        d = str(ts_items[0]).split('-')
-        _date.append(f'{d[0]}.{d[1]}.{d[2]}')
+        d = str(
+            ts_items[0]
+        ).split('-')
         # date format: yyyy.mm.dd
-        _time.append(f'{str(ts_items[1])}:00')
+        _date.append(
+            f'{d[0]}.{d[1]}.{d[2]}'
+        )
         # time format: hh:mm:ss
         # 00 added as granularity is in minutes for this data
-    return pd.DataFrame(np.array([_date, _time]).T, columns=['date','time'])
+        _time.append(
+            f'{str(ts_items[1])}:00'
+        )
+    return pd.DataFrame(
+        np.array([
+            _date,
+             _time
+        ]).T,
+        columns=[
+            'date',
+            'time'
+        ]
+    )

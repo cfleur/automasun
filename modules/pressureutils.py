@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from io import StringIO
 from pathlib import PosixPath, Path
-from typing import Union, List
+from typing import List, Tuple, Union
 
 import pandas as pd
 import numpy as np
@@ -10,24 +10,190 @@ from . import ioutils
 from . import timeutils
 
 
+def parse_pressure_folder(
+        config_file: Union[str, PosixPath],
+        pressure_config_section: str,
+        location: str,
+        v: bool = False,
+        vv: bool = False
+) -> None:
+    """
+    Parses all unparsed pressure files in a folder. Output is written to output folder
+    defined in yaml config file.
+    """
+    unparsed_pressure_paths, output_paths = generate_unparsed_pressure_file_list(
+        config_file,
+        pressure_config_section,
+        location,
+        v=v, vv=vv
+    )
+    print(
+        f'******\nFound {len(unparsed_pressure_paths)} unparsed pressure files'
+        f' for location « {location} ».\n**'
+    )
+    file_count = 0
+    for in_path, out_path in zip(unparsed_pressure_paths, output_paths):
+        try:
+            parse_pressure_file(
+                in_path,
+                out_path,
+            )
+            file_count += 1
+        except Exception as exc:
+            # TODO: create better error handling (not enough printout for errors, too general exception)
+            print(
+                f"* Failed to parse {in_path}:\n",
+                exc
+            )
+    print(
+        f'**\nParsed {file_count} pressure files for location « {location} ».\n******'
+    )
+
+
+def parse_pressure_file(
+        input_file_path: Union[str, PosixPath],
+        output_file_path: Union[str, PosixPath],
+        pressure_correction: Union[None, float, list] = None,
+        in_sep: Union[None, str] = None,
+        out_sep: str =',',
+        in_col_names: Union[None, dict] = None,
+        out_col_names: Union[None, dict] = None,
+        v: bool = False,
+        q: bool = False
+) -> None:
+    """Takes aws .lst or .txt log pressure file as input and
+    creates a .csv file with data necessary for retrieval algorithm.
+    """
+    if v:
+        print('*'*4,'Creating formatted pressure file.')
+    # set default values for mutable type arguments
+    if in_col_names is None:
+        in_col_names = {}
+    if out_col_names is None:
+        out_col_names = {
+            'date': 'Date',
+            'time': 'TimeUTC',
+            'pressure': 'BaroTHB40',
+            'temperature': 'TemperatureC',
+            'rh': 'RelativeHumidity'
+        }
+    input_file_type = ioutils.get_file_extension(input_file_path)
+    if input_file_type == 'lst':    # automatic weather station (aws) file
+        if in_sep is None:
+            in_sep = r'\s\s+'
+        df = pd.read_csv(input_file_path, sep=in_sep, engine='python').drop(0)
+
+        # parse timestamp
+        if 'timestamp_col_name' in in_col_names:
+            timestamp_col_name = in_col_names['timestamp_col_name']
+        else:
+            timestamp_col_name = df.columns[0]
+        timestamps = list(df[timestamp_col_name])
+        timestamp_df = timeutils.timestamp_to_date_time(timestamps)
+        _pressure = df['P_ST']
+        _temperature = df['T']
+        _relative_humidity = df['RH']
+        _out_pressure = pd.DataFrame(
+            np.array([
+                timestamp_df['date'],
+                timestamp_df['time'],
+                apply_pressure_correction(
+                    _pressure, pressure_correction,
+                    q
+                ),
+                _temperature,
+                _relative_humidity
+            ]).T,
+            columns=[
+                out_col_names['date'],
+                out_col_names['time'],
+                out_col_names['pressure'],
+                out_col_names['temperature'],
+                out_col_names['rh']
+            ])
+    elif input_file_type == 'txt':  # em27 case log file
+        if in_sep is None:
+            in_sep = r'\s+'
+        df = pd.read_csv(
+            preprocess_case_log_file(
+                input_file_path
+            ),
+            sep=in_sep,
+            engine='python',
+            skiprows=2,
+            header=None
+        )
+        _pressure = df[9]
+        _date = [
+                    timeutils.format_datestring(
+                        original_date = d,
+                        original_format = "%d.%m.%Y",
+                        desired_format = "%Y.%m.%d"
+                    )
+                    for d in df[0]
+                ]
+        _out_pressure = pd.DataFrame(
+            np.array([
+                _date,
+                df[1],
+                apply_pressure_correction(
+                    _pressure, pressure_correction,
+                    q
+                ),
+                df[12],
+                df[15]
+            ]).T,
+            columns=[
+                out_col_names['date'],
+                out_col_names['time'],
+                out_col_names['pressure'],
+                out_col_names['temperature'],
+                out_col_names['rh']
+            ])
+    else:
+        raise ValueError(
+            f'Supported input file types: .lst, .txt.'
+            f' Got {input_file_type}.'
+        )
+
+    # export
+    if not Path(output_file_path).exists():
+        Path(output_file_path).mkdir(parents=True)
+    _out_pressure.to_csv(output_file_path, index=False, sep=out_sep)
+    if not q:
+        print(f'{output_file_path.name} pressure file written {datetime.now().time()}.')
+    if v:
+        print(f'Pressure file location: {output_file_path}')
+
+
 def apply_pressure_correction(
         pressure_vector: pd.Series,
         pressure_correction: Union[None, float, list] = None,
         q: bool = False
 ) -> pd.Series:
+    """
+    Applies a pressure correction. Correction can either be a constant or an array.
+    """
+    if isinstance(pressure_vector, pd.Series):
+        if pressure_vector.dtype == np.float64:
+            _vector = pressure_vector.copy(deep=True)
+    else:
+        raise TypeError(
+            'Input pressure vector should be a pandas series with dtype=numpy.float64.'
+        )
     if pressure_correction == None:
         if not q:
             print('No pressure correction applied.')
     elif type(pressure_correction) == float:
         # subtract the pressure_correction
         # from each measurement if offset is a scalar
-        pressure_vector += pressure_correction
+        _vector += pressure_correction
         if not q:
             print(f'Scalar pressure offest of {pressure_correction:.5f} applied.')
-    elif len(pressure_correction) == len(pressure_vector):
+    elif len(pressure_correction) == len(_vector):
         # subtract the pressure_correction vector from the
         # pressure measurement vector if pressure_correction is a vector
-        pressure_vector += pressure_correction
+        _vector += pressure_correction
         if not q:
             print('Vector pressure correction applied.')
     else:
@@ -35,7 +201,7 @@ def apply_pressure_correction(
             'Pressure correction must be either None (default), a float,'
             ' or an array of floats of same length as number of pressure measurements.'
         )
-    return pressure_vector
+    return _vector
 
 
 def generate_unparsed_pressure_file_list(
@@ -44,11 +210,14 @@ def generate_unparsed_pressure_file_list(
         location: str,
         v: bool = False,
         vv: bool = False
-) -> List[Union[str, PosixPath]]:
+) -> Tuple[
+        List[PosixPath],
+        List[PosixPath]
+    ]:
     """
     Takes raw and parsed pressure folders from a config file and
     compares the contents based on dates in the file names.
-    Returns a list of unparsed pressure files.
+    Returns a list of full paths of unparsed pressure files.
     """
     pressure_config = ioutils.read_yaml_config(config_file)[pressure_config_section]
     raw_pressure_folder = pressure_config[location]['raw_pressure_folder']
@@ -105,150 +274,6 @@ def generate_unparsed_pressure_file_list(
     return unparsed_pressure_paths, output_paths
 
 
-def parse_pressure_file(
-        input_file_path: Union[str, PosixPath],
-        output_file_path: Union[str, PosixPath],
-        pressure_correction: Union[None, float, list] = None,
-        in_sep: Union[None, str] = None,
-        out_sep: str ='\t',
-        in_col_names: Union[None, dict] = None,
-        out_col_names: Union[None, dict] = None,
-        v: bool = False,
-        q: bool = False
-) -> None:
-    """Takes aws .lst or .txt log pressure file as input and
-    creates a .csv file with data necessary for retrieval algorithm.
-    """
-    if v:
-        print('*'*4,'Creating formatted pressure file.')
-    # set default values for mutable type arguments
-    if in_col_names is None:
-        in_col_names = {}
-    if out_col_names is None:
-        out_col_names = {
-            'date': 'UTCdate_____',
-            'time': 'UTCtime___',
-            'pressure': 'BaroYoung'
-        }
-    input_file_type = ioutils.get_file_extension(input_file_path)
-    if input_file_type == 'lst':    # automatic weather station (aws) file
-        if in_sep is None:
-            in_sep = '\s\s+'
-        df = pd.read_csv(input_file_path, sep=in_sep, engine='python').drop(0)
-
-        # parse timestamp
-        if 'timestamp_col_name' in in_col_names:
-            timestamp_col_name = in_col_names['timestamp_col_name']
-        else:
-            timestamp_col_name = df.columns[0]
-        timestamps = list(df[timestamp_col_name])
-        timestamp_df = timeutils.timestamp_to_date_time(timestamps)
-
-        _pressure = df['P_ST']
-        _out_pressure = pd.DataFrame(
-            np.array([
-                timestamp_df['date'],
-                timestamp_df['time'],
-                apply_pressure_correction(
-                    _pressure, pressure_correction,
-                    q
-                )
-            ]).T,
-            columns=[
-                out_col_names['date'],
-                out_col_names['time'],
-                out_col_names['pressure']
-            ])
-    elif input_file_type == 'txt':  # em27 case log file
-        if in_sep is None:
-            in_sep = '\s+'
-        df = pd.read_csv(
-            preprocess_case_log_file(
-                input_file_path
-            ),
-            sep=in_sep,
-            engine='python',
-            skiprows=2,
-            header=None
-        )
-        _pressure = df[9]
-        _out_pressure = pd.DataFrame(
-            np.array([
-                df[0],
-                df[1],
-                apply_pressure_correction(
-                    _pressure, pressure_correction,
-                    q
-                ),
-                df[12],
-                df[15]
-            ]).T,
-            columns=[
-                out_col_names['date'],
-                out_col_names['time'],
-                out_col_names['pressure'],
-                'TemperatureC',
-                'RelativeHumidity'
-            ])
-    else:
-        raise ValueError(
-            f'Supported input file types: .lst, .txt.'
-            f' Got {input_file_type}.'
-        )
-
-    # export
-    _out_pressure.to_csv(output_file_path, index=False, sep=out_sep)
-    if not q:
-        print(f'{output_file_path.name} pressure file written {datetime.now().time()}.')
-    if v:
-        print(f'Pressure file location: {output_file_path}')
-
-
-def parse_pressure_folder(
-        config_file: Union[str, PosixPath],
-        pressure_config_section: str,
-        location: str,
-        v: bool = False,
-        vv: bool = False
-) -> None:
-    """
-    Parses all unparsed pressure files in a folder. Output is written to output folder
-    defined in yaml config file.
-    """
-    unparsed_pressure_paths, output_paths = generate_unparsed_pressure_file_list(
-        config_file,
-        pressure_config_section,
-        location,
-        v=v, vv=vv
-    )
-    print(
-        f'******\nFound {len(unparsed_pressure_paths)} unparsed pressure files'
-        f'for location « {location} ».\n**'
-    )
-    file_count = 0
-    for in_path, out_path in zip(unparsed_pressure_paths, output_paths):
-        try:
-            parse_pressure_file(
-                in_path,
-                out_path,
-                out_sep=',',
-                out_col_names = {
-                    'date': 'Date',
-                    'time': 'TimeUTC',
-                    'pressure': 'BaroTHB40'
-                }
-            )
-            file_count += 1
-        except Exception as exc:
-            print(
-                f"* Failed to parse {in_path}:\n",
-                exc
-            )
-    print(
-        f'**\nParsed {file_count} pressure files for location « {location} ».\n******'
-    )
-
-
 def preprocess_case_log_file(
         file_path: Union[str, PosixPath]
 ) -> StringIO:
@@ -260,7 +285,7 @@ def preprocess_case_log_file(
     With preprocessing label and value are separated by a space:
     T -10
     After preprocessing "-10" will be read into a dataframe as a numerical value for temperature.
-    This preprocessing allows to sure pandas read_csv with separator '\s+' (one or more spaces).
+    This preprocessing allows to sure pandas read_csv with separator r"\s+" (one or more spaces).
     Returns a StringIO object in order to avoid writing a partially processed pressure file.
     """
     with open(file_path, 'r') as file:
