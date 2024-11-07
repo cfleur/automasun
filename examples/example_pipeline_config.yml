@@ -1,0 +1,25 @@
+pressure:
+###############
+# template:
+  # location: enter the location name of the pressure measurements, REQUIRED
+    # raw_pressure_folder: full path of the raw pressure data, REQUIRED
+    # parsed_pressure_folder: full path of the parsed pressure data, REQUIRED
+    # raw_file_extension: the extension of raw data files
+    # do not enter a dot before the extension, REQUIRED
+    # start_date: first date to parse, REQUIRED
+    # end_date: last date to parse, OPTIONAL, default is yesterday
+###############
+# to skip processing a location, comment out the lines
+###############
+  location1:
+    raw_pressure_folder: "examples/raw"
+    raw_file_extension: "txt"
+    parsed_pressure_folder: "examples/processed"
+    start_date: "2024-04-01"
+    end_date:
+  location2:
+    raw_pressure_folder: "examples/raw"
+    raw_file_extension: "lst"
+    parsed_pressure_folder: "examples/processed"
+    start_date: "2020-04-01"
+    end_date:
