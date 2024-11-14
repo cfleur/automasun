@@ -7,108 +7,25 @@ import pandas as pd
 import pytest
 
 from ..modules import pressureutils
-
-CONF_SECTION: str = "section1"
-LOCS: list[str] = [
-    "location1",
-    "location2"
-]
-EXAMPLE_RAW_FILE_PATHS: list[Path] = [
-    Path(
-        "examples/pressure/location1_raw/160602_PTU300_log.txt"
-    ),
-    Path(
-        "examples/pressure/location2_raw/aws_20160602.lst"
-    )
-]
-EXAMPLE_PROCESSED_FILE_PATHS: list[Path] = [
-    Path(
-        "examples/pressure/location1_processed/example-location1-20160602.csv"
-    ),
-    Path(
-        "examples/pressure/location2_processed/example-location2-20160602.csv"
-    )
-]
-
-
-@pytest.fixture
-def mock_config_existing_processed_files(
-        tmp_path_factory: pytest.TempPathFactory,
-) -> Path:
-    content: str = (
-        f"{CONF_SECTION}:\n"
-        f"  {LOCS[0]}:\n"
-        f"    raw_pressure_folder: '{EXAMPLE_RAW_FILE_PATHS[0].parent}'\n"
-        f"    raw_file_extension: 'txt'\n"
-        f"    parsed_pressure_folder: '{EXAMPLE_PROCESSED_FILE_PATHS[0].parent}'\n"
-        f"    start_date: '2016-06-02'\n"
-        f"    end_date:\n"
-        f"  {LOCS[1]}:\n"
-        f"    raw_pressure_folder: {EXAMPLE_RAW_FILE_PATHS[1].parent}\n"
-        f"    raw_file_extension: 'lst'\n"
-        f"    parsed_pressure_folder: {EXAMPLE_PROCESSED_FILE_PATHS[1].parent}\n"
-        f"    start_date: '2016-06-02'\n"
-        f"    end_date:\n"
-    )
-    config: Path = tmp_path_factory.mktemp(
-        "tmp_conf"
-    )/"tmp_config.yml"
-    config.write_text(content)
-    return config
-
-
-@pytest.fixture
-def mock_config_no_processed_files(
-        tmp_path_factory: pytest.TempPathFactory,
-        mock_processed_file_paths: Tuple[Path, Path]
-) -> Path:
-    content: str = (
-        f"{CONF_SECTION}:\n"
-        f"  {LOCS[0]}:\n"
-        f"    raw_pressure_folder: '{EXAMPLE_RAW_FILE_PATHS[0].parent}'\n"
-        f"    raw_file_extension: 'txt'\n"
-        f"    parsed_pressure_folder: '{mock_processed_file_paths[0].parent}'\n"
-        f"    start_date: '2016-06-02'\n"
-        f"    end_date:\n"
-        f"  {LOCS[1]}:\n"
-        f"    raw_pressure_folder: {EXAMPLE_RAW_FILE_PATHS[1].parent}\n"
-        f"    raw_file_extension: 'lst'\n"
-        f"    parsed_pressure_folder: {mock_processed_file_paths[1].parent}\n"
-        f"    start_date: '2016-06-02'\n"
-        f"    end_date:\n"
-    )
-    config: Path = tmp_path_factory.mktemp(
-        "tmp_conf"
-    )/"tmp_config.yml"
-    config.write_text(content)
-    return config
-
-
-@pytest.fixture(scope="function")
-def mock_processed_file_paths(
-        tmp_path_factory: pytest.TempPathFactory
-) -> Tuple[Path, Path]:
-    mock_base_dir = tmp_path_factory.mktemp("mock_pressure")
-    loc1_dir = mock_base_dir/"loc1_processed"
-    loc2_dir = mock_base_dir/"loc2_processed"
-    # Does not create the directories or files so the functions which
-    # depend on the files not existing work correctly.
-    # Only the correct file path is needed
-    return (
-        loc1_dir/f"pressure-{LOCS[0]}-20160602.csv",
-        loc2_dir/f"pressure-{LOCS[1]}-20160602.csv"
-    )
+from .fixtures import (
+    mock_config_existing_processed_files,
+    mock_config_no_processed_files,
+    mock_processed_file_paths,
+    CONF_SECTION_PRESSURE,
+    LOCS,
+    EXAMPLE_RAW_FILE_PATHS,
+    EXAMPLE_PROCESSED_FILE_PATHS
+)
 
 
 def test_parse_pressure_folder(
         mock_config_no_processed_files: Path,
-        # mock_raw_file_paths: Tuple[Path, Path],
         mock_processed_file_paths: Tuple[Path, Path]
 ) -> None:
     for i, loc in enumerate(LOCS):
         pressureutils.parse_pressure_folder(
             mock_config_no_processed_files,
-            CONF_SECTION,
+            CONF_SECTION_PRESSURE,
             loc
         )
         assert mock_processed_file_paths[i].exists()
@@ -117,7 +34,7 @@ def test_parse_pressure_folder(
 def test_parse_pressure_file(
         tmp_path: Generator[Path, None, None]
 ) -> None:
-    # Verify content of parsed pressure file is correct
+    # Test that the content of parsed pressure file is correct
     for i, raw_input_path in enumerate(EXAMPLE_RAW_FILE_PATHS):
         mock_output_path: Path = tmp_path/f'tmp_parsed_loc{i}.csv'
         mock_output_path.touch()
@@ -174,7 +91,7 @@ def test_generate_unparsed_pressure_file_list(
     for i, loc in enumerate(LOCS):
         unparsed_paths, output_paths = pressureutils.generate_unparsed_pressure_file_list(
             mock_config_no_processed_files,
-            CONF_SECTION,
+            CONF_SECTION_PRESSURE,
             loc
         )
         assert unparsed_paths == [EXAMPLE_RAW_FILE_PATHS[i]]
@@ -184,7 +101,7 @@ def test_generate_unparsed_pressure_file_list(
     for loc in LOCS:
         unparsed_paths, output_paths = pressureutils.generate_unparsed_pressure_file_list(
             mock_config_existing_processed_files,
-            CONF_SECTION,
+            CONF_SECTION_PRESSURE,
             loc
         )
         assert (unparsed_paths, output_paths) == ([], [])

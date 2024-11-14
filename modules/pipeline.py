@@ -1,27 +1,28 @@
+import os
 import sys
 from pathlib import Path
 
-from dotenv import Dotenv
-
 from . import pressureutils, ioutils
 
+# environment with MAIN_CONFIG_DIR pointing to configuration files required
+# for example, export a .env file:
+# export $(grep -v '^#' <path-to-env> | xargs)
+CONFIG_FOLDER: Path = Path(os.getenv('MAIN_CONFIG_DIR'))
+CONFIG_FILE: Path = CONFIG_FOLDER/"FMIpipelineutils/fmi_pipeline_config.yml"
 
-ENV = Dotenv(".env")
-# TODO: put env into repo root, not in super repo
-# TODO: remove matplotlib dependency
-CONFIG_FOLDER = Path(ENV.get('MAIN_CONFIG_DIR'))
-CONFIG_FILE = CONFIG_FOLDER/"FMIpipelineutils/fmi_pipeline_config.yml"
 
-
-def prepare_pressure() -> None:
+def prepare_pressure(
+        config_file: Path
+) -> None:
+    # TODO: add test
     pressure_config_section = "pressure"
     locations = ioutils.get_yaml_section_keys(
-        CONFIG_FILE,
+        config_file,
         pressure_config_section
     )
     for location in locations:
         pressureutils.parse_pressure_folder(
-            CONFIG_FILE,
+            config_file,
             pressure_config_section,
             location
         )
