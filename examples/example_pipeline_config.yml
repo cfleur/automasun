@@ -12,14 +12,14 @@ pressure:
 # to skip processing a location, comment out the lines
 ###############
   location1:
-    raw_pressure_folder: "examples/raw"
+    raw_pressure_folder: "examples/location1_raw"
     raw_file_extension: "txt"
-    parsed_pressure_folder: "examples/processed"
-    start_date: "2024-04-01"
+    parsed_pressure_folder: "examples/location1_processed"
+    start_date: "2016-06-02"
     end_date:
   location2:
-    raw_pressure_folder: "examples/raw"
+    raw_pressure_folder: "examples/location1_raw"
     raw_file_extension: "lst"
-    parsed_pressure_folder: "examples/processed"
-    start_date: "2020-04-01"
+    parsed_pressure_folder: "examples/location2_processed"
+    start_date: "2016-06-02"
     end_date:
