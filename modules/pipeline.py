@@ -4,17 +4,28 @@ from pathlib import Path
 
 from . import pressureutils, ioutils
 
-# environment with MAIN_CONFIG_DIR pointing to configuration files required
-# for example, export a .env file:
-# export $(grep -v '^#' <path-to-env> | xargs)
-CONFIG_FOLDER: Path = Path(os.getenv('MAIN_CONFIG_DIR'))
-CONFIG_FILE: Path = CONFIG_FOLDER/"FMIpipelineutils/fmi_pipeline_config.yml"
+def setup_environment() -> Path:
+    """
+    Environment key `PIPELINE_CONFIG_FILE` pointing to
+    configuration file is required,for example, export a .env file:
+    export $(grep -v '^#' <path-to-env> | xargs)
+    """
+    config_file_key = 'PIPELINE_CONFIG_FILE'
+    return Path(os.getenv(config_file_key))
+
+
+CONFIG_FILE: Path = setup_environment()
+# TODO: create integration test cases to check user config exists/is valid
 
 
 def prepare_pressure(
-        config_file: Path
+        config_file: Path = CONFIG_FILE
 ) -> None:
-    # TODO: add test
+    """
+    Reads config file and collects locations to process and
+    passes them to a function that parses pressure folders
+    for those locations.
+    """
     pressure_config_section = "pressure"
     locations = ioutils.get_yaml_section_keys(
         config_file,
