@@ -172,11 +172,23 @@ def test_extract_date_from_fname() -> None:
 def test_generate_set_difference() -> None:
     raw_folder: set = {'file1','file2','file3'}
     processed_folder: set = {'file1', 'file2'}
+    empty_folder: set = set()
     unprocessed_files: set = ioutils.generate_set_difference(
         raw_folder,
         processed_folder
     )
     assert {'file3'} == unprocessed_files
+    # Test with empty folder
+    unprocessed_files: set = ioutils.generate_set_difference(
+        empty_folder,
+        processed_folder
+    )
+    assert set() == unprocessed_files
+    unprocessed_files: set = ioutils.generate_set_difference(
+        raw_folder,
+        empty_folder
+    )
+    assert raw_folder == unprocessed_files
 
 
 ################### Working with files #######################

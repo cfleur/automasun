@@ -29,6 +29,11 @@ def test_parse_pressure_folder(
             loc
         )
         assert mock_processed_file_paths[i].exists()
+    # TODO: check that function actually finds the files
+    # and parses them, e.g. by tracking number of files found and parsed
+    # in respective functions
+    # currently, making tests fail (e.g. assert 0) shows print out from
+    # from parse_pressure_folder which fails quietly with try-except block
 
 
 def test_parse_pressure_file(

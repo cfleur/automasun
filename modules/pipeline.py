@@ -1,3 +1,4 @@
+import datetime as dt
 import os
 import sys
 from pathlib import Path
@@ -46,3 +47,4 @@ if __name__ == "__main__":
     # args[0] = current file
     # args[1] = function name
     # args[2:] = function args : (*unpacked)
+    print(args[0], dt.datetime.now(dt.timezone.utc))

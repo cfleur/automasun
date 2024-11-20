@@ -155,10 +155,10 @@ def parse_pressure_file(
             f'Supported input file types: .lst, .txt.'
             f' Got {input_file_type}.'
         )
-
-    # export
-    if not Path(output_file_path).exists():
-        Path(output_file_path).mkdir(parents=True)
+    output_dir = Path(output_file_path).parent
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True)
+    print(output_file_path)
     _out_pressure.to_csv(output_file_path, index=False, sep=out_sep)
     if not q:
         print(f'{output_file_path.name} pressure file written {datetime.now().time()}.')
@@ -226,6 +226,7 @@ def generate_unparsed_pressure_file_list(
         pressure_config[location]['start_date'],
         "%Y-%m-%d"
     ).date()
+    # Default end date is yesterday
     if pressure_config[location]['end_date'] is None:
         end_date = datetime.now().date() - timedelta(days=1)
     else:
