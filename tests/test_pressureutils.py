@@ -86,6 +86,43 @@ def test_apply_pressure_correction() -> None:
         )
 
 
+def test_calculate_pressure_correction() -> None:
+    barometric_factors = [0, 1, 25.1]
+    reference_pressure = 10001.0
+    results = [0, reference_pressure, reference_pressure*25.1]
+    for B, r in zip(barometric_factors, results):
+        np.testing.assert_almost_equal(
+            pressureutils.calculate_pressure_correction(
+                reference_pressure, B
+            ),
+            r
+        )
+
+
+def test_calculate_barometric_factor() -> None:
+    h = 202.5
+    h_b_vec = [202.5, 201.5, 200.0]
+    # Math: h-h = 0, \quad h-201.5 \approx 1, \quad h-200.0 \approx 2.5
+    g_0 = 9.80665
+    M = 0.289644
+    R = 8.314462
+    T_K = 0 + 273.15
+    results = [
+        np.exp(-0/(R*T_K)),
+        np.exp(-(g_0*M)/(R*T_K)),
+        np.exp(-(g_0*M*(h-200.0))/(R*T_K))
+    ]
+    for h_b, r in zip(h_b_vec, results):
+        np.testing.assert_almost_equal(
+            pressureutils.calculate_barometric_factor(
+                calculated_pressure_height = h, 
+                reference_pressure_height = h_b,
+                reference_temperature_C = 0
+            ),
+            r
+        )
+
+
 def test_generate_unparsed_pressure_file_list(
         mock_config_no_processed_files: Path,
         mock_config_existing_processed_files: Path,

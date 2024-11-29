@@ -177,31 +177,116 @@ def apply_pressure_correction(
     if isinstance(pressure_vector, pd.Series):
         if pressure_vector.dtype == np.float64:
             _vector = pressure_vector.copy(deep=True)
+        if pressure_correction == None:
+            if not q:
+                print('No pressure correction applied.')
+        elif type(pressure_correction) == float:
+            # subtract the pressure_correction
+            # from each measurement if offset is a scalar
+            _vector += pressure_correction
+            if not q:
+                print(f'Scalar pressure offest of {pressure_correction:.5f} applied.')
+        elif len(pressure_correction) == len(_vector):
+            # subtract the pressure_correction vector from the
+            # pressure measurement vector if pressure_correction is a vector
+            _vector += pressure_correction
+            if not q:
+                print('Vector pressure correction applied.')
+        else:
+            raise ValueError(
+                'Pressure correction must be either None (default), a float,'
+                ' or an array of floats of same length as number of pressure measurements.'
+            )
     else:
         raise TypeError(
             'Input pressure vector should be a pandas series with dtype=numpy.float64.'
         )
-    if pressure_correction == None:
-        if not q:
-            print('No pressure correction applied.')
-    elif type(pressure_correction) == float:
-        # subtract the pressure_correction
-        # from each measurement if offset is a scalar
-        _vector += pressure_correction
-        if not q:
-            print(f'Scalar pressure offest of {pressure_correction:.5f} applied.')
-    elif len(pressure_correction) == len(_vector):
-        # subtract the pressure_correction vector from the
-        # pressure measurement vector if pressure_correction is a vector
-        _vector += pressure_correction
-        if not q:
-            print('Vector pressure correction applied.')
-    else:
-        raise ValueError(
-            'Pressure correction must be either None (default), a float,'
-            ' or an array of floats of same length as number of pressure measurements.'
-        )
     return _vector
+
+
+def calculate_pressure_correction(
+        reference_pressure: float,
+        barometric_factor: float,
+) -> float:
+    """
+    Applies the barometric formula to calculate pressure at a particular altitude.
+    Parameters
+    ----------
+    reference_pressure: float,
+        the measured pressure at a given altitude, P_b
+    
+    Returns
+    -------
+    calculated pressure: float,
+        calculated via the barometric formula:
+        # Math:
+            P = P_b \hat{B}
+            where
+        # Math:
+            \hat{B} = exp(\frac{-g_0 M H}{R T_K}),
+            where
+        R: float,
+            the universal gas constant =  8.314462 J/(mol·K)
+        g_0: float,
+            gravitational acceleration = 9.80665 m/s2
+        M: float,
+            the molar mass of Earth's air = 0.0289644 kg/mol
+        T_K: float,
+            the temperature in Kelvin, temperature in degrees C + 273.15
+    """
+    return reference_pressure * barometric_factor
+
+
+def calculate_barometric_factor(
+        calculated_pressure_height: float,
+        reference_pressure_height: float,
+        reference_temperature_C: float = 20
+) -> float:
+    """
+    Given a constant reference temperature, the exponential part of the 
+    barometric formula is calculated as a pressure correction factor.
+
+    Parameters
+    ----------
+    calculated_pressure_height: float,
+        the elevation in m of the vertical position of the desired calculated pressure, h
+    reference_pressure_height: float,
+        the elevation in m of the vertical position of the measured reference pressure, h_b
+    reference_temperature_C: float,
+        the temperature in degrees Celcius, T_C. Default value is 20 degrees C. The temperature should not vary between h and h_b
+        to use this formula. The pressure calculation only have a weak dependency on temperature,
+        e.g. from -20 to 20 C there is only about 0.035 Pa variance 
+        [online pressure calculator](https://www.omnicalculator.com/physics/air-pressure-at-altitude).
+    
+    The barometric formula further relies on several constants:
+    R: float,
+        the universal gas constant =  8.314462 J/(mol·K)
+    g_0: float,
+        gravitational acceleration = 9.80665 m/s2
+    M: float,
+        the molar mass of Earth's air = 0.0289644 kg/mol
+    
+    Returns
+    -------
+    calculated pressure: float,
+        calculated via the barometric formula:
+        # Math:
+            \hat{B} = exp(\frac{-g_0 M H}{R T_K}),
+            where
+        # Math:
+            H = h-h_b
+            and
+        # Math:
+            T_K = T_C + 273.15
+    """
+    g_0: float = 9.80665
+    M: float = 0.289644
+    H: float = calculated_pressure_height - reference_pressure_height # Math: H = h-h_b
+    R: float = 8.314462
+    T_K: float = reference_temperature_C + 273.15
+    return np.exp(
+        -(g_0*M*H) / (R*T_K)
+    )
 
 
 def generate_unparsed_pressure_file_list(
