@@ -1,25 +1,43 @@
 pressure:
-###############
-# template:
-  # location: enter the location name of the pressure measurements, REQUIRED
-    # raw_pressure_folder: full path of the raw pressure data, REQUIRED
-    # parsed_pressure_folder: full path of the parsed pressure data, REQUIRED
-    # raw_file_extension: the extension of raw data files
-    # do not enter a dot before the extension, REQUIRED
-    # start_date: first date to parse, REQUIRED
-    # end_date: last date to parse, OPTIONAL, default is yesterday
-###############
-# to skip processing a location, comment out the lines
-###############
+  ###############
+  # template:
+    # location: str, REQUIRED
+        # enter the location name of the pressure measurements
+      # raw_pressure_folder: str, REQUIRED
+        # full path of the raw pressure data
+      # raw_file_extension: str, REQUIRED
+        # the extension of raw data files
+        # do not enter a dot before the extension
+      # parsed_pressure_folder: str, REQUIRED
+        # full path of the parsed pressure data
+      # use_pressure_correction_factor: bool, OPTIONAL
+        # True to calibrate the pressure to the em27 instrument elevation
+      # em27_m: int | float | str, OPTIONAL
+        # The elevation above sea level of the mirrors of em27 instrument in meters
+      # pressure_sensor_m: int | float | str, OPTIONAL
+        # The elevation above sea level of the pressure sensor in meters
+      # start_date: str, yyyy-mm-dd, REQUIRED
+        # first date to parse
+      # end_date: str, yyyy-mm-dd, REQUIRED
+        # last date to parse, OPTIONAL, default is yesterday
+  ###############
+  # to skip processing a location, comment out the lines
+  ###############
   location1:
     raw_pressure_folder: "examples/location1_raw"
     raw_file_extension: "txt"
     parsed_pressure_folder: "examples/location1_processed"
+    use_pressure_correction_factor: True
+    em27_m: 181
+    pressure_sensor_m: 181
     start_date: "2016-06-02"
     end_date:
   location2:
     raw_pressure_folder: "examples/location1_raw"
     raw_file_extension: "lst"
+    use_pressure_correction_factor:
+    em27_m:
+    pressure_sensor_m:
     parsed_pressure_folder: "examples/location2_processed"
     start_date: "2016-06-02"
     end_date:

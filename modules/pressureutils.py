@@ -31,12 +31,23 @@ def parse_pressure_folder(
         f'******\nFound {len(unparsed_pressure_paths)} unparsed pressure files'
         f' for location « {location} ».\n**'
     )
+    pressure_correction = calculate_barometric_factor(
+        get_elevations(
+            config_file,
+            pressure_config_section,
+            location,
+            v=v
+        )
+    )
     file_count = 0
     for in_path, out_path in zip(unparsed_pressure_paths, output_paths):
         try:
             parse_pressure_file(
                 in_path,
                 out_path,
+                pressure_correction,
+                'factor',
+                v=v
             )
             file_count += 1
         except Exception as exc:
@@ -54,6 +65,7 @@ def parse_pressure_file(
         input_file_path: Union[str, PosixPath],
         output_file_path: Union[str, PosixPath],
         pressure_correction: Union[None, float, list] = None,
+        pressure_correction_type: str = 'factor',
         in_sep: Union[None, str] = None,
         out_sep: str =',',
         in_col_names: Union[None, dict] = None,
@@ -98,8 +110,10 @@ def parse_pressure_file(
                 timestamp_df['date'],
                 timestamp_df['time'],
                 apply_pressure_correction(
-                    _pressure, pressure_correction,
-                    q
+                    pressure_vector=_pressure,
+                    pressure_correction=pressure_correction,
+                    pressure_correction_type=pressure_correction_type,
+                    q=q
                 ),
                 _temperature,
                 _relative_humidity
@@ -137,8 +151,10 @@ def parse_pressure_file(
                 _date,
                 df[1],
                 apply_pressure_correction(
-                    _pressure, pressure_correction,
-                    q
+                    pressure_vector=_pressure,
+                    pressure_correction=pressure_correction,
+                    pressure_correction_type=pressure_correction_type,
+                    q=q
                 ),
                 df[12],
                 df[15]
@@ -169,95 +185,110 @@ def parse_pressure_file(
 def apply_pressure_correction(
         pressure_vector: pd.Series,
         pressure_correction: Union[None, float, list] = None,
+        pressure_correction_type: str = 'factor',
         q: bool = False
 ) -> pd.Series:
     """
-    Applies a pressure correction. Correction can either be a constant or an array.
+    Applies a pressure correction. Correction can either be a constant or an array or None.
+    If correction is none, input vector is returned unchanged.
+
+    Parameters:
+    ----------
+    pressure_vector: pandas Series
+        Pressures to correct.
+    pressure_correction: None | float | list like
+        Value(s) to apply as pressure correction (None means no correction).
+        Default is None.
+    pressure_correction_type: str
+        Whether to apply the correction as an offset (addition) or a factor (multiplication).
+        Default is 'offset'.
+    q: bool
+        Quiet; suppress printed output.
+
+    Returns:
+    -------
+    pandas Series
+        Corrected pressure vector
     """
-    if isinstance(pressure_vector, pd.Series):
-        if pressure_vector.dtype == np.float64:
-            _vector = pressure_vector.copy(deep=True)
-        if pressure_correction == None:
-            if not q:
-                print('No pressure correction applied.')
-        elif type(pressure_correction) == float:
-            # subtract the pressure_correction
-            # from each measurement if offset is a scalar
-            _vector += pressure_correction
-            if not q:
-                print(f'Scalar pressure offest of {pressure_correction:.5f} applied.')
-        elif len(pressure_correction) == len(_vector):
-            # subtract the pressure_correction vector from the
-            # pressure measurement vector if pressure_correction is a vector
-            _vector += pressure_correction
-            if not q:
-                print('Vector pressure correction applied.')
-        else:
-            raise ValueError(
-                'Pressure correction must be either None (default), a float,'
-                ' or an array of floats of same length as number of pressure measurements.'
-            )
-    else:
+    if not isinstance(
+        pressure_vector, pd.Series
+    ) or pressure_vector.dtype != np.float64:
         raise TypeError(
             'Input pressure vector should be a pandas series with dtype=numpy.float64.'
         )
-    return _vector
-
-
-def calculate_pressure_correction(
-        reference_pressure: float,
-        barometric_factor: float,
-) -> float:
-    """
-    Applies the barometric formula to calculate pressure at a particular altitude.
-    Parameters
-    ----------
-    reference_pressure: float,
-        the measured pressure at a given altitude, P_b
-    
-    Returns
-    -------
-    calculated pressure: float,
-        calculated via the barometric formula:
-        # Math:
-            P = P_b \hat{B}
-            where
-        # Math:
-            \hat{B} = exp(\frac{-g_0 M H}{R T_K}),
-            where
-        R: float,
-            the universal gas constant =  8.314462 J/(mol·K)
-        g_0: float,
-            gravitational acceleration = 9.80665 m/s2
-        M: float,
-            the molar mass of Earth's air = 0.0289644 kg/mol
-        T_K: float,
-            the temperature in Kelvin, temperature in degrees C + 273.15
-    """
-    return reference_pressure * barometric_factor
+    if pressure_correction_type not in ['offset', 'factor']:
+        raise ValueError(
+            "pressure_correction_type must be one of 'offset', 'factor'"
+        )
+    _vector = pressure_vector.copy(deep=True)
+    if pressure_correction is None:
+        if not q:
+            print('No pressure correction applied.')
+            return _vector
+    elif isinstance(pressure_correction, float):
+        if pressure_correction_type == 'offset':
+            if not q:
+                print(
+                    f'Scalar pressure offset of {pressure_correction:.5f} added.'
+                )
+            return _vector + pressure_correction
+        elif pressure_correction_type == 'factor':
+            if not q:
+                print(
+                    f'Scalar pressure factor of {pressure_correction:.5f} multiplied.'
+                )
+            return _vector * pressure_correction
+    elif isinstance(
+        pressure_correction, (list, np.ndarray, pd.Series)
+    ) and len(pressure_correction) == len(_vector):
+        if all(
+            isinstance(
+                x, (int, float)
+            ) for x in pressure_correction
+        ):
+            if pressure_correction_type == 'offset':
+                if not q:
+                    print(
+                        'Vector pressure offest added.'
+                    )
+                return _vector + pressure_correction
+            elif pressure_correction_type == 'factor':
+                if not q:
+                    print(
+                        'Vector pressure factor multiplied.'
+                    )
+                return _vector * pressure_correction
+        else:
+            raise ValueError(
+                'All elements in pressure_correction must be numeric.'
+            )
+    else:
+        raise ValueError(
+            'Pressure correction must be either None (default), a float, or an array of'
+            ' numeric values of the same length as the number of pressure measurements.'
+        )
 
 
 def calculate_barometric_factor(
-        calculated_pressure_height: float,
-        reference_pressure_height: float,
+        calculated_and_reference_elevations: Tuple[float, float] | None,
         reference_temperature_C: float = 20
 ) -> float:
     """
-    Given a constant reference temperature, the exponential part of the 
+    Given a constant reference temperature, the exponential part of the
     barometric formula is calculated as a pressure correction factor.
+    If None is the first argument, None is returned.
 
     Parameters
     ----------
-    calculated_pressure_height: float,
-        the elevation in m of the vertical position of the desired calculated pressure, h
-    reference_pressure_height: float,
+    calculated_and_reference_elevations: (float, float) | None
+        the elevation in m of the vertical position of the desired calculated pressure, h, and
         the elevation in m of the vertical position of the measured reference pressure, h_b
     reference_temperature_C: float,
         the temperature in degrees Celcius, T_C. Default value is 20 degrees C. The temperature should not vary between h and h_b
         to use this formula. The pressure calculation only have a weak dependency on temperature,
-        e.g. from -20 to 20 C there is only about 0.035 Pa variance 
+        e.g. from -20 to 20 C there is only about 0.035 Pa variance
         [online pressure calculator](https://www.omnicalculator.com/physics/air-pressure-at-altitude).
-    
+
     The barometric formula further relies on several constants:
     R: float,
         the universal gas constant =  8.314462 J/(mol·K)
@@ -265,10 +296,10 @@ def calculate_barometric_factor(
         gravitational acceleration = 9.80665 m/s2
     M: float,
         the molar mass of Earth's air = 0.0289644 kg/mol
-    
+
     Returns
     -------
-    calculated pressure: float,
+    pressure correction factor: float,
         calculated via the barometric formula:
         # Math:
             \hat{B} = exp(\frac{-g_0 M H}{R T_K}),
@@ -278,15 +309,86 @@ def calculate_barometric_factor(
             and
         # Math:
             T_K = T_C + 273.15
+
+    Note that the full barometric formula is:
+    # Math:
+        P = P_b \hat{B}
+    Therefore applying this factor to a vector of pressure measurements, P_b,
+    results in a vector of corrected pressure P.
     """
+    if calculated_and_reference_elevations is None:
+        return None
     g_0: float = 9.80665
     M: float = 0.289644
-    H: float = calculated_pressure_height - reference_pressure_height # Math: H = h-h_b
+    H: float = calculated_and_reference_elevations[0] - calculated_and_reference_elevations[1]
+    # Math: H = h-h_b
     R: float = 8.314462
     T_K: float = reference_temperature_C + 273.15
     return np.exp(
         -(g_0*M*H) / (R*T_K)
     )
+
+
+def get_elevations(
+        config_file: Union[str, PosixPath],
+        pressure_config_section: str,
+        location: str,
+        v: bool = False,
+) -> Tuple[float, float] | None:
+    """
+    Reads the config file and returns elevation difference between pressure sensor and em27 instrument.
+    Elevation should be measured at the middle of the pressure sensor and at the mirrors of the em27 instrument.
+    The difference is calculated:
+    # Math:
+        H = h-h_b,
+    where h is the elevation of the em27 instrument and h_b is the elevation of the pressure sensor.
+    """
+    pressure_config = ioutils.read_yaml_config(config_file)[pressure_config_section]
+    use_pressure_correction_factor = pressure_config[location]['use_pressure_correction_factor']
+    if use_pressure_correction_factor is True:
+        # make sure both pressure sensor and em27 values are given
+        if any(
+            elevation is None for elevation in (
+                pressure_config[location]['pressure_sensor_m'],
+                pressure_config[location]['em27_m']
+            )
+        ):
+            raise ValueError(
+                'To calculate a pressure calibration factor, ensure both'
+                ' pressure sensor and em27 elevation values in m are provided'
+                f' in pipeline configuration file for {location}.'
+            )
+        try:
+            pressure_sensor_elevation_m: float = float(
+                pressure_config[location]['pressure_sensor_m']
+            )
+            em27_elevation_m: float = float(
+                pressure_config[location]['em27_m']
+            )
+        except (TypeError, ValueError):
+            print(
+                f'Could not convert elevations to float for {location}.'
+                ' Check config file elevation data.'
+            )
+            raise
+        # elevation_difference: float = em27_elevation_m - pressure_sensor_elevation_m
+        # Math:   H = h-h_b,
+        if v:
+            print(
+                f'Elevation information for {location}:'
+                f'\nem27_m: {em27_elevation_m}'
+                f'\npressure_sensor_m: {pressure_sensor_elevation_m}'
+                # f'\nElevation difference: {elevation_difference}'
+            )
+        # return elevation_difference
+        return em27_elevation_m, pressure_sensor_elevation_m
+    elif use_pressure_correction_factor in (False, None):
+        return None
+    else:
+        raise ValueError(
+            'Config parameter use_pressure_correction_factor must be True, False or empty.'
+            f' Got {use_pressure_correction_factor}.'
+        )
 
 
 def generate_unparsed_pressure_file_list(

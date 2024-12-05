@@ -63,6 +63,7 @@ def test_prepare_pressure_config_file():
     )
     assert example_config_file.exists()
     assert example_config_file.is_file()
+    # Test that existing processed files are not modified
     time_0: list[float] = []
     for file_path in EXAMPLE_PROCESSED_FILE_PATHS:
         time_0.append(
@@ -79,3 +80,6 @@ def test_prepare_pressure_config_file():
             os.path.getmtime(file_path) == t0
         )
     assert False not in write_time_comparisons
+    # TODO: add more thorough test cases,
+    # e.g. using example config file comparing output
+    # to example processed file if possible
