@@ -1,9 +1,11 @@
 import datetime as dt
 
 from pathlib import Path
+from typing import Generator
 
 import pandas as pd
 import pytest
+import yaml
 
 
 from ..modules import ioutils
@@ -94,6 +96,7 @@ def mock_config(
 
 ############## Working with file name dates ##################
 
+# @pytest.mark.only
 def test_generate_file_list_from_dates() -> None:
     # Test that correct file names are returned
     filelist = []
@@ -118,6 +121,7 @@ def test_generate_file_list_from_dates() -> None:
     assert g is None
 
 
+# @pytest.mark.only
 def test_generate_fname_from_date() -> None:
     filenames = []
     dates = DATES.copy()
@@ -146,6 +150,7 @@ def test_generate_fname_from_date() -> None:
     assert g is None
 
 
+# @pytest.mark.only
 def test_generate_date_list_from_folder(
         mock_files: list[Path]
 ) -> None:
@@ -158,6 +163,7 @@ def test_generate_date_list_from_folder(
     assert dates == sorted(DATES)
 
 
+# @pytest.mark.only
 def test_extract_date_from_fname() -> None:
     dates = []
     for f in FILENAMES:
@@ -169,6 +175,7 @@ def test_extract_date_from_fname() -> None:
     assert dates == DATES
 
 
+# @pytest.mark.only
 def test_generate_set_difference() -> None:
     raw_folder: set = {'file1','file2','file3'}
     processed_folder: set = {'file1', 'file2'}
@@ -201,6 +208,7 @@ def test_generate_set_difference() -> None:
 # def_test_filter_move_files
 
 
+# @pytest.mark.only
 def test_create_file_path() -> None:
     path = ioutils.create_file_path(
         MOCK_CSV_DIRNAME,
@@ -212,12 +220,14 @@ def test_create_file_path() -> None:
     assert path == Path(MOCK_CSV_DIRNAME)/MOCK_CSV_FILENAME
 
 
+# @pytest.mark.only
 def test_get_file_extension(
         mock_csv: Path
 ) -> None:
     assert ioutils.get_file_extension(mock_csv) == 'csv'
 
 
+# @pytest.mark.only
 def test_read_file_names(
         mock_csv: Path
 ) -> None:
@@ -228,6 +238,7 @@ def test_read_file_names(
 
 ############# Working with YAML config file ##################
 
+# @pytest.mark.only
 def test_get_yaml_section_keys(
         mock_config: Path,
 ) -> None:
@@ -237,15 +248,48 @@ def test_get_yaml_section_keys(
     assert keys == ["key11", "key12"]
 
 
+# @pytest.mark.only
 def test_read_yaml_config(
         mock_config: Path,
         mock_config_dict: dict
 ) -> None:
-    assert ioutils.read_yaml_config(mock_config) == mock_config_dict
+    assert ioutils.read_yaml_config(
+        mock_config
+    ) == mock_config_dict
+
+
+# @pytest.mark.only
+def test_write_yaml_config(
+        mock_config_dict: dict,
+        tmp_path: Generator[Path, None, None]
+) -> None:
+    # Test that data written is correct.
+    mock_config_path: Path = tmp_path/'mock_config.yml'
+    input_data = mock_config_dict
+    ioutils.write_yaml_config(
+        data=input_data,
+        config_file_path=mock_config_path
+    )
+    with open(
+        mock_config_path,
+        'r',
+        encoding='utf-8'
+    ) as f:
+        loaded_data = yaml.safe_load(f)
+    assert loaded_data == input_data
+    # Test that existing file is not overwritten
+    with pytest.raises(
+        FileExistsError
+    ):
+        ioutils.write_yaml_config(
+            data=input_data,
+            config_file_path=mock_config_path
+        )
 
 
 ############## CSV and HDF file operations ###################
 
+# @pytest.mark.only
 def test_get_csv_col(
         mock_csv: Path
 ) -> None:
@@ -256,6 +300,7 @@ def test_get_csv_col(
     assert list(csv_col) == list(mock_col)
 
 
+# @pytest.mark.only
 def test_get_csv_keys(
         mock_csv: Path
 ) -> None:

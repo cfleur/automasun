@@ -18,10 +18,10 @@ EXAMPLE_RAW_FILE_PATHS: list[Path] = [
 ]
 EXAMPLE_PROCESSED_FILE_PATHS: list[Path] = [
     Path(
-        "examples/pressure/location1_processed/example-location1-20160602.csv"
+        "examples/pressure/location1_processed/pressure-location1-20160602.csv"
     ),
     Path(
-        "examples/pressure/location2_processed/example-location2-20160602.csv"
+        "examples/pressure/location2_processed/pressure-location2-20160602.csv"
     )
 ]
 
@@ -30,18 +30,28 @@ EXAMPLE_PROCESSED_FILE_PATHS: list[Path] = [
 def mock_config_existing_processed_files(
         tmp_path_factory: pytest.TempPathFactory,
 ) -> Path:
+    """
+    This fixture is used for checking how the processing works when there
+    are existing processed files.
+    """
     content: str = (
         f"{CONF_SECTION_PRESSURE}:\n"
         f"  {LOCS[0]}:\n"
         f"    raw_pressure_folder: '{EXAMPLE_RAW_FILE_PATHS[0].parent}'\n"
         f"    raw_file_extension: 'txt'\n"
         f"    parsed_pressure_folder: '{EXAMPLE_PROCESSED_FILE_PATHS[0].parent}'\n"
+        f"    use_pressure_correction_factor: True\n"
+        f"    em27_m: 2\n"
+        f"    pressure_sensor_m: '1'\n"
         f"    start_date: '2016-06-02'\n"
         f"    end_date:\n"
         f"  {LOCS[1]}:\n"
         f"    raw_pressure_folder: {EXAMPLE_RAW_FILE_PATHS[1].parent}\n"
         f"    raw_file_extension: 'lst'\n"
         f"    parsed_pressure_folder: {EXAMPLE_PROCESSED_FILE_PATHS[1].parent}\n"
+        f"    use_pressure_correction_factor: True\n"
+        f"    em27_m: 2\n"
+        f"    pressure_sensor_m: 2\n"
         f"    start_date: '2016-06-02'\n"
         f"    end_date:\n"
     )
@@ -57,18 +67,99 @@ def mock_config_no_processed_files(
         tmp_path_factory: pytest.TempPathFactory,
         mock_processed_file_paths: Tuple[Path, Path]
 ) -> Path:
+    """
+    This fixture is used for checking how the processing works when there
+    are NO existing processed files.
+    """
     content: str = (
         f"{CONF_SECTION_PRESSURE}:\n"
         f"  {LOCS[0]}:\n"
         f"    raw_pressure_folder: '{EXAMPLE_RAW_FILE_PATHS[0].parent}'\n"
         f"    raw_file_extension: 'txt'\n"
         f"    parsed_pressure_folder: '{mock_processed_file_paths[0].parent}'\n"
+        f"    use_pressure_correction_factor: True\n"
+        f"    em27_m: 2\n"
+        f"    pressure_sensor_m: 1\n"
         f"    start_date: '2016-06-02'\n"
         f"    end_date:\n"
         f"  {LOCS[1]}:\n"
         f"    raw_pressure_folder: {EXAMPLE_RAW_FILE_PATHS[1].parent}\n"
         f"    raw_file_extension: 'lst'\n"
         f"    parsed_pressure_folder: {mock_processed_file_paths[1].parent}\n"
+        f"    use_pressure_correction_factor: True\n"
+        f"    em27_m: 2\n"
+        f"    pressure_sensor_m: 1\n"
+        f"    start_date: '2016-06-02'\n"
+        f"    end_date:\n"
+    )
+    config: Path = tmp_path_factory.mktemp(
+        "tmp_conf"
+    )/"tmp_config.yml"
+    config.write_text(content)
+    return config
+
+
+@pytest.fixture
+def mock_config_pressure_correction_cases(
+        tmp_path_factory: pytest.TempPathFactory,
+) -> Path:
+    """
+    This fixture is used for checking elevation data cases.
+    """
+    content: str = (
+        f"{CONF_SECTION_PRESSURE}:\n"
+        f"  l1:\n"
+        f"    raw_pressure_folder: 'NA'\n"
+        f"    raw_file_extension: 'txt'\n"
+        f"    parsed_pressure_folder: 'NA'\n"
+        f"    use_pressure_correction_factor: True\n"
+        f"    em27_m: 2\n"
+        f"    pressure_sensor_m: '1'\n"
+        f"    start_date: '2016-06-02'\n"
+        f"    end_date:\n"
+        f"  l2:\n"
+        f"    raw_pressure_folder: 'NA'\n"
+        f"    raw_file_extension: 'lst'\n"
+        f"    parsed_pressure_folder: 'NA'\n"
+        f"    use_pressure_correction_factor: True\n"
+        f"    em27_m:\n"
+        f"    pressure_sensor_m: 0.0\n"
+        f"    start_date: '2016-06-02'\n"
+        f"    end_date:\n"
+        f"  l3:\n"
+        f"    raw_pressure_folder: 'NA'\n"
+        f"    raw_file_extension: 'txt'\n"
+        f"    parsed_pressure_folder: 'NA'\n"
+        f"    use_pressure_correction_factor: True\n"
+        f"    em27_m: 2\n"
+        f"    pressure_sensor_m: 'h'\n"
+        f"    start_date: '2016-06-02'\n"
+        f"    end_date:\n"
+        f"  l4:\n"
+        f"    raw_pressure_folder: 'NA'\n"
+        f"    raw_file_extension: 'lst'\n"
+        f"    parsed_pressure_folder: 'NA'\n"
+        f"    use_pressure_correction_factor: False\n"
+        f"    em27_m: 2\n"
+        f"    pressure_sensor_m: '1'\n"
+        f"    start_date: '2016-06-02'\n"
+        f"    end_date:\n"
+        f"  l5:\n"
+        f"    raw_pressure_folder: 'NA'\n"
+        f"    raw_file_extension: 'lst'\n"
+        f"    parsed_pressure_folder: 'NA'\n"
+        f"    use_pressure_correction_factor:\n"
+        f"    em27_m: 2\n"
+        f"    pressure_sensor_m: '1'\n"
+        f"    start_date: '2016-06-02'\n"
+        f"    end_date:\n"
+        f"  l6:\n"
+        f"    raw_pressure_folder: 'NA'\n"
+        f"    raw_file_extension: 'lst'\n"
+        f"    parsed_pressure_folder: 'NA'\n"
+        f"    use_pressure_correction_factor: 'yes'\n"
+        f"    em27_m: 2\n"
+        f"    pressure_sensor_m: '1'\n"
         f"    start_date: '2016-06-02'\n"
         f"    end_date:\n"
     )
