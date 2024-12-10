@@ -1,9 +1,11 @@
 import os
 
 from pathlib import Path
-from typing import Tuple
+from typing import Generator, Tuple
 
-from ..modules import pipeline
+import pytest
+
+from ..modules import pipeline, ioutils
 from .fixtures import (
     mock_config_existing_processed_files,
     mock_config_no_processed_files,
@@ -12,13 +14,8 @@ from .fixtures import (
     EXAMPLE_PROCESSED_FILE_PATHS
 )
 
-# TODO: check that pipeline.prepare_pressure actually finds the files
-# and parses them, e.g. by tracking number of files found and parsed
-# in respective functions
-# currently, making tests fail (e.g. assert 0) shows print out from
-# from parse_pressure_folder which fails quietly with try-except block
 
-
+# @pytest.mark.only
 def test_prepare_pressure_existing(
         mock_config_existing_processed_files: Path
 ):
@@ -41,6 +38,7 @@ def test_prepare_pressure_existing(
     assert False not in write_time_comparisons
 
 
+# @pytest.mark.only
 def test_prepare_pressure_no_existing(
         mock_config_no_processed_files: Path,
         mock_processed_file_paths: Tuple[Path, Path],
@@ -57,7 +55,13 @@ def test_prepare_pressure_no_existing(
         assert parsed_pressure_file.exists()
 
 
-def test_prepare_pressure_config_file():
+# @pytest.mark.only
+def test_prepare_pressure_config_file(
+        tmp_path: Generator[Path, None, None]
+):
+    """
+    Test cases based in example config file found in examples/.
+    """
     example_config_file: Path = Path(
         "examples/example_pipeline_config.yml"
     )
@@ -80,6 +84,40 @@ def test_prepare_pressure_config_file():
             os.path.getmtime(file_path) == t0
         )
     assert False not in write_time_comparisons
-    # TODO: add more thorough test cases,
-    # e.g. using example config file comparing output
-    # to example processed file if possible
+    # Test that correct output is given based on example config file
+    # i.e. that the pressure is correctly parsed and the correction
+    # factor (calibration) is correctly applied based on elevations
+    config: dict = ioutils.read_yaml_config(
+        example_config_file
+    )
+    # change output paths to temp locations so that
+    # pressure parsing is not skipped
+    mock_output_paths: list[Path] = []
+    example_output_paths: list[Path] = []
+    for i, loc in enumerate(config['pressure']):
+        example_output_path = config['pressure'][loc]['parsed_pressure_folder']
+        example_output_paths.append(
+            Path(example_output_path)
+        )
+        mock_output_dir: Path = tmp_path/loc
+        config['pressure'][loc]['parsed_pressure_folder'] = str(mock_output_dir)
+        mock_output_paths.append(
+            mock_output_dir/f'{EXAMPLE_PROCESSED_FILE_PATHS[i].name}'
+        )
+    # write a new temp config file with temp paths
+    # as pipeline requires a file path as an argument
+    mock_config_path: Path = tmp_path/'mock_config_file.yml'
+    ioutils.write_yaml_config(
+        data=config,
+        config_file_path=mock_config_path
+    )
+    assert mock_config_path.is_file()
+    del config # clean up config object, its no longer needed
+    pipeline.prepare_pressure(
+        mock_config_path
+    )
+    for mock_output_path, example_output_path in zip(
+        mock_output_paths, EXAMPLE_PROCESSED_FILE_PATHS
+    ):
+        assert mock_output_path.exists()
+        assert mock_output_path.read_text() == example_output_path.read_text()

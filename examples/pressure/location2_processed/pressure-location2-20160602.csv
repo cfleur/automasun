@@ -1,0 +1,4 @@
+Date,TimeUTC,PressureBaroTHB40,CalibrationFactor,CalibratedPressurehPa,TemperatureC,RelativeHumidity
+2016.06.02,18:00:00,1003.8,1.0,1003.8,-21.1,75.0
+2016.06.02,18:10:00,1003.8,1.0,1003.8,-21.4,75.0
+2016.06.02,18:20:00,1003.7,1.0,1003.7,-21.8,76.0

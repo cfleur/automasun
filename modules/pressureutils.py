@@ -85,7 +85,9 @@ def parse_pressure_file(
         out_col_names = {
             'date': 'Date',
             'time': 'TimeUTC',
-            'pressure': 'BaroTHB40',
+            'pressure': 'PressureBaroTHB40',
+            'correction': 'CalibrationFactor',
+            'corrected_p': 'CalibratedPressurehPa',
             'temperature': 'TemperatureC',
             'rh': 'RelativeHumidity'
         }
@@ -103,18 +105,24 @@ def parse_pressure_file(
         timestamps = list(df[timestamp_col_name])
         timestamp_df = timeutils.timestamp_to_date_time(timestamps)
         _pressure = df['P_ST']
+        _correction, _corrected_pressure = apply_pressure_correction(
+            pressure_vector=_pressure,
+            pressure_correction=pressure_correction,
+            pressure_correction_type=pressure_correction_type,
+            q=q
+        )
         _temperature = df['T']
         _relative_humidity = df['RH']
         _out_pressure = pd.DataFrame(
             np.array([
                 timestamp_df['date'],
                 timestamp_df['time'],
-                apply_pressure_correction(
-                    pressure_vector=_pressure,
-                    pressure_correction=pressure_correction,
-                    pressure_correction_type=pressure_correction_type,
-                    q=q
+                _pressure,
+                np.full(
+                    _pressure.shape,
+                    _correction
                 ),
+                _corrected_pressure,
                 _temperature,
                 _relative_humidity
             ]).T,
@@ -122,6 +130,8 @@ def parse_pressure_file(
                 out_col_names['date'],
                 out_col_names['time'],
                 out_col_names['pressure'],
+                out_col_names['correction'],
+                out_col_names['corrected_p'],
                 out_col_names['temperature'],
                 out_col_names['rh']
             ])
@@ -138,6 +148,12 @@ def parse_pressure_file(
             header=None
         )
         _pressure = df[9]
+        _correction, _corrected_pressure = apply_pressure_correction(
+            pressure_vector=_pressure,
+            pressure_correction=pressure_correction,
+            pressure_correction_type=pressure_correction_type,
+            q=q
+        )
         _date = [
                     timeutils.format_datestring(
                         original_date = d,
@@ -150,12 +166,12 @@ def parse_pressure_file(
             np.array([
                 _date,
                 df[1],
-                apply_pressure_correction(
-                    pressure_vector=_pressure,
-                    pressure_correction=pressure_correction,
-                    pressure_correction_type=pressure_correction_type,
-                    q=q
+                _pressure,
+                np.full(
+                    _pressure.shape,
+                    _correction
                 ),
+                _corrected_pressure,
                 df[12],
                 df[15]
             ]).T,
@@ -163,6 +179,8 @@ def parse_pressure_file(
                 out_col_names['date'],
                 out_col_names['time'],
                 out_col_names['pressure'],
+                out_col_names['correction'],
+                out_col_names['corrected_p'],
                 out_col_names['temperature'],
                 out_col_names['rh']
             ])
@@ -187,7 +205,7 @@ def apply_pressure_correction(
         pressure_correction: Union[None, float, list] = None,
         pressure_correction_type: str = 'factor',
         q: bool = False
-) -> pd.Series:
+) -> Tuple[Union[None, float, list], pd.Series]:
     """
     Applies a pressure correction. Correction can either be a constant or an array or None.
     If correction is none, input vector is returned unchanged.
@@ -224,20 +242,29 @@ def apply_pressure_correction(
     if pressure_correction is None:
         if not q:
             print('No pressure correction applied.')
-            return _vector
+            return(
+                pressure_correction,
+                _vector
+            )
     elif isinstance(pressure_correction, float):
         if pressure_correction_type == 'offset':
             if not q:
                 print(
-                    f'Scalar pressure offset of {pressure_correction:.5f} added.'
+                    f'Scalar pressure offset of {pressure_correction:.9f} added.'
                 )
-            return _vector + pressure_correction
+            return(
+                pressure_correction,
+                _vector + pressure_correction
+            )
         elif pressure_correction_type == 'factor':
             if not q:
                 print(
-                    f'Scalar pressure factor of {pressure_correction:.5f} multiplied.'
+                    f'Scalar pressure factor of {pressure_correction:.9f} multiplied.'
                 )
-            return _vector * pressure_correction
+            return(
+                pressure_correction,
+                _vector * pressure_correction
+            )
     elif isinstance(
         pressure_correction, (list, np.ndarray, pd.Series)
     ) and len(pressure_correction) == len(_vector):
@@ -251,13 +278,19 @@ def apply_pressure_correction(
                     print(
                         'Vector pressure offest added.'
                     )
-                return _vector + pressure_correction
+                return(
+                    pressure_correction,
+                    _vector + pressure_correction
+                )
             elif pressure_correction_type == 'factor':
                 if not q:
                     print(
                         'Vector pressure factor multiplied.'
                     )
-                return _vector * pressure_correction
+                return(
+                    pressure_correction,
+                    _vector * pressure_correction
+                )
         else:
             raise ValueError(
                 'All elements in pressure_correction must be numeric.'

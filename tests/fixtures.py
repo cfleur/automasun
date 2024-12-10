@@ -18,10 +18,10 @@ EXAMPLE_RAW_FILE_PATHS: list[Path] = [
 ]
 EXAMPLE_PROCESSED_FILE_PATHS: list[Path] = [
     Path(
-        "examples/pressure/location1_processed/example-location1-20160602.csv"
+        "examples/pressure/location1_processed/pressure-location1-20160602.csv"
     ),
     Path(
-        "examples/pressure/location2_processed/example-location2-20160602.csv"
+        "examples/pressure/location2_processed/pressure-location2-20160602.csv"
     )
 ]
 

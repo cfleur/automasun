@@ -282,8 +282,32 @@ def read_yaml_config(
     """
     Reads .yaml config file and returns data as a dictionary.
     """
-    with open(config_file_path, 'r') as f:
-        return yaml.load(f, Loader=yaml.FullLoader)
+    with open(
+        config_file_path,
+        'r',
+        encoding='utf-8'
+    ) as f:
+        return yaml.safe_load(f)
+
+
+def write_yaml_config(
+        data: dict,
+        config_file_path: Union[str, PosixPath]
+) -> None:
+    """
+    Writes .yaml config file from a dictionary.
+    Raises FileExistsError if the supplied path exists to prevent unintentional overwrites.
+    """
+    if config_file_path.exists():
+        raise FileExistsError(
+            f"The file {config_file_path} already exists."
+        )
+    with open(
+        config_file_path,
+        'w',
+        encoding='utf-8'
+    ) as f:
+        return yaml.dump(data, f)
 
 
 ##############################################################

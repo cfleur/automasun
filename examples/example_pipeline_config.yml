@@ -24,20 +24,20 @@ pressure:
   # to skip processing a location, comment out the lines
   ###############
   location1:
-    raw_pressure_folder: "examples/location1_raw"
+    raw_pressure_folder: "examples/pressure/location1_raw"
     raw_file_extension: "txt"
-    parsed_pressure_folder: "examples/location1_processed"
+    parsed_pressure_folder: "examples/pressure/location1_processed"
     use_pressure_correction_factor: True
     em27_m: 181
     pressure_sensor_m: 181
     start_date: "2016-06-02"
     end_date:
   location2:
-    raw_pressure_folder: "examples/location1_raw"
+    raw_pressure_folder: "examples/pressure/location2_raw"
     raw_file_extension: "lst"
-    use_pressure_correction_factor:
-    em27_m:
-    pressure_sensor_m:
-    parsed_pressure_folder: "examples/location2_processed"
+    use_pressure_correction_factor: True
+    em27_m: 180
+    pressure_sensor_m: 180
+    parsed_pressure_folder: "examples/pressure/location2_processed"
     start_date: "2016-06-02"
     end_date:

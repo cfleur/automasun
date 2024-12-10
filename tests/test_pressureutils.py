@@ -19,10 +19,12 @@ from .fixtures import (
 )
 
 
+# @pytest.mark.only
 def test_parse_pressure_folder(
         mock_config_no_processed_files: Path,
         mock_processed_file_paths: Tuple[Path, Path]
 ) -> None:
+    # Test that when no processed files exist, they are created
     for i, loc in enumerate(LOCS):
         pressureutils.parse_pressure_folder(
             mock_config_no_processed_files,
@@ -35,21 +37,23 @@ def test_parse_pressure_folder(
     # in respective functions
     # currently, making tests fail (e.g. assert 0) shows print out from
     # from parse_pressure_folder which fails quietly with try-except block
+    # Note: pipeline.prepare_pressure checks that correct output is created
+    # based on example config
 
 
+# @pytest.mark.only
 def test_parse_pressure_file(
         tmp_path: Generator[Path, None, None]
 ) -> None:
     # Test that the content of parsed pressure file is correct
-    # Use a pressure correction factor of 1 so the pressure values
+    # Use a pressure correction factor of 1.0 so the pressure values
     # remain unchanged by the pressure correction.
     for i, raw_input_path in enumerate(EXAMPLE_RAW_FILE_PATHS):
         mock_output_path: Path = tmp_path/f'tmp_parsed_loc{i}.csv'
-        mock_output_path.touch()
         pressureutils.parse_pressure_file(
             raw_input_path,
             mock_output_path,
-            1.0
+            pressure_correction=1.0 # calibration factor
         )
         mock_output_content = mock_output_path.read_text()
         with open(
@@ -61,36 +65,50 @@ def test_parse_pressure_file(
         assert mock_output_content == example_output_content
 
 
+# @pytest.mark.only
 def test_apply_pressure_correction() -> None:
     vector = pd.Series([1,2,3,4], dtype=np.float64)
     correction_constant = 0.1
     correction_vector = [1,1,1,1]
+    # Test that correction returns correction input
+    assert pressureutils.apply_pressure_correction(
+        vector,
+        correction_constant
+    )[0] == correction_constant
+    assert pressureutils.apply_pressure_correction(
+        vector,
+        correction_vector
+    )[0] == correction_vector
+    assert pressureutils.apply_pressure_correction(
+        vector,
+        None
+    )[0] is None
     # Constant correction applied
     assert list(pressureutils.apply_pressure_correction(
         vector,
         correction_constant,
         pressure_correction_type='offset'
-    )) == pytest.approx([1.1,2.1,3.1,4.1])
+    )[1]) == pytest.approx([1.1,2.1,3.1,4.1])
     assert list(pressureutils.apply_pressure_correction(
         vector,
         correction_constant,
         pressure_correction_type='factor'
-    )) == pytest.approx([0.1,0.2,0.3,0.4])
+    )[1]) == pytest.approx([0.1,0.2,0.3,0.4])
     # Vector correction applied
     assert list(pressureutils.apply_pressure_correction(
         vector,
         correction_vector,
         pressure_correction_type='offset'
-    )) == pytest.approx([2,3,4,5])
+    )[1]) == pytest.approx([2,3,4,5])
     assert list(pressureutils.apply_pressure_correction(
         vector,
         correction_vector,
         pressure_correction_type='factor'
-    )) == pytest.approx([1,2,3,4])
+    )[1]) == pytest.approx([1,2,3,4])
     # No correction applied
     assert list(pressureutils.apply_pressure_correction(
         vector
-    )) == list(vector)
+    )[1]) == list(vector)
     # Test that only accepts a pandas Series with dtype np.float64
     with pytest.raises(TypeError):
         pressureutils.apply_pressure_correction(
@@ -125,6 +143,7 @@ def test_apply_pressure_correction() -> None:
         )
 
 
+# @pytest.mark.only
 def test_calculate_barometric_factor() -> None:
     h = 202.5
     h_b_vec = [202.5, 201.5, 200.0]
@@ -152,7 +171,7 @@ def test_calculate_barometric_factor() -> None:
     ) is None
 
 
-
+# @pytest.mark.only
 def test_get_elevations(
         mock_config_pressure_correction_cases: Path
 ) -> None:
@@ -200,6 +219,7 @@ def test_get_elevations(
         )
 
 
+# @pytest.mark.only
 def test_generate_unparsed_pressure_file_list(
         mock_config_no_processed_files: Path,
         mock_config_existing_processed_files: Path,
@@ -226,6 +246,7 @@ def test_generate_unparsed_pressure_file_list(
         assert (unparsed_paths, output_paths) == ([], [])
 
 
+# @pytest.mark.only
 def test_preprocess_case_log_file(
         tmp_path: Generator[Path, None, None]
 ) -> None:
