@@ -16,17 +16,37 @@ import os
 import sys
 from pathlib import Path
 
+import dotenv
+
 from . import pressureutils, ioutils
 
 
 def setup_environment() -> Path:
     """
     Environment key `PIPELINE_CONFIG_FILE` pointing to
-    configuration file is required,for example, export a .env file:
-    export $(grep -v '^#' <path-to-env> | xargs)
+    configuration file is required. For example,
+    - export the variable:
+        export PIPELINE_CONFIG_FILE=<path-to-config-file>
+    - place a .env file with this variable in project root
+    - export a .env file from an alternate location:
+        export $(grep -v '^#' <path-to-env> | xargs)
     """
+    if os.path.isfile('.env'):
+        dotenv.load_dotenv('.env')
     config_file_key = 'PIPELINE_CONFIG_FILE'
-    return Path(os.getenv(config_file_key))
+    try:
+        config_file = Path(
+            os.getenv(
+                config_file_key
+            )
+        )
+    except TypeError:
+        print(
+            f">>> Could not find {config_file_key} from environment.",
+            setup_environment.__doc__
+        )
+        raise
+    return config_file
 
 
 CONFIG_FILE: Path = setup_environment()

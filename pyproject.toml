@@ -10,6 +10,7 @@ dependencies = [
     "h5py>=3.11.0",
     "numpy>=2.1.1",
     "PyYAML>=6.0.2",
+    "python-dotenv>=1.0.1",
 ]
 requires-python = ">=3.11"
 readme = "README.md"
@@ -22,4 +23,9 @@ distribution = false
 [tool.pdm.dev-dependencies]
 dev = [
     "pytest>=8.3.3",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "only: only run selected tests",
 ]
