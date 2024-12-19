@@ -15,10 +15,14 @@ from .fixtures import (
 )
 
 
+@pytest.mark.integration
+def test_setup_environment() -> None:
+    pipeline.setup_environment()
+
 # @pytest.mark.only
 def test_prepare_pressure_existing(
         mock_config_existing_processed_files: Path
-):
+) -> None:
     # Test pipeline does not modify folder contents when processed files exist
     time_0: list[float] = []
     for file_path in EXAMPLE_PROCESSED_FILE_PATHS:
@@ -42,7 +46,7 @@ def test_prepare_pressure_existing(
 def test_prepare_pressure_no_existing(
         mock_config_no_processed_files: Path,
         mock_processed_file_paths: Tuple[Path, Path],
-):
+) -> None:
     # Test that pipeline creates correct folders and files from config
     pipeline.prepare_pressure(
         mock_config_no_processed_files
@@ -58,7 +62,7 @@ def test_prepare_pressure_no_existing(
 # @pytest.mark.only
 def test_prepare_pressure_config_file(
         tmp_path: Generator[Path, None, None]
-):
+) -> None:
     """
     Test cases based in example config file found in examples/.
     """

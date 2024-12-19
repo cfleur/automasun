@@ -28,4 +28,8 @@ dev = [
 [tool.pytest.ini_options]
 markers = [
     "only: only run selected tests",
+    "integration: tests real environment setup"
+]
+addopts = [
+    "-m not integration"
 ]

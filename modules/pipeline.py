@@ -35,7 +35,7 @@ def setup_environment() -> Path:
         dotenv.load_dotenv('.env')
     config_file_key = 'PIPELINE_CONFIG_FILE'
     try:
-        config_file = Path(
+        config_file_path = Path(
             os.getenv(
                 config_file_key
             )
@@ -46,15 +46,21 @@ def setup_environment() -> Path:
             setup_environment.__doc__
         )
         raise
-    return config_file
+    if not config_file_path.is_file() or config_file_path.suffix != '.yml':
+        raise FileNotFoundError(
+            f" Check environment variable {config_file_key}."
+            f" '{config_file_path}' is not a .yml file."
+        )
+    # TODO: check that config file is valid YAML
+    return config_file_path
 
 
-CONFIG_FILE: Path = setup_environment()
+CONFIG_FILE_PATH: Path = setup_environment()
 # TODO: create integration test cases to check user config exists/is valid
 
 
 def prepare_pressure(
-        config_file: Path = CONFIG_FILE
+        config_file: Path = CONFIG_FILE_PATH
 ) -> None:
     """
     Reads config file and collects locations to process and
