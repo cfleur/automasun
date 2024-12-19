@@ -1,18 +1,29 @@
 from pathlib import Path
-from typing import Generator, Tuple
+from typing import Generator, Tuple, Union
 
 import pytest
 
 from ..modules import syncutils
 
+@pytest.fixture(scope="function")
+def mock_target_folder(
+    tmp_path_factory: pytest.TempPathFactory
+) -> Generator[Tuple[Path, list[Path], Path, list[Path]], None, None]:
+    def remove_directory_recursively(input_path: Path):
+        for child in input_path.iterdir():
+            if child.is_file() or child.is_symlink():
+                child.unlink()
+            else:
+                remove_directory_recursively(child)
+        input_path.rmdir()
 
-# @pytest.mark.only
-def test_write_symlinks(
-        tmp_path: Generator[Path, None, None],
-) -> None:
-    target_folder: Path = tmp_path/'source_folder'
-    target_folder.mkdir(parents=True)
-    link_folder: Path = tmp_path/'link_folder'
+    link_folder: Path = tmp_path_factory.mktemp("link_folder")
+    link_paths: list[Path] = [
+        link_folder/'test0_dir',
+        link_folder/'test1.file',
+        link_folder/'test2.file'
+    ]
+    target_folder: Path = tmp_path_factory.mktemp("target_folder")
     target_paths: list[Path] = [
         target_folder/'test0_dir',
         target_folder/'test1.file',
@@ -23,6 +34,16 @@ def test_write_symlinks(
             path.mkdir()
         else:
             path.touch()
+    yield link_folder, link_paths, target_folder, target_paths
+    remove_directory_recursively(link_folder)
+    remove_directory_recursively(target_folder)
+
+
+# @pytest.mark.only
+def test_write_symlinks(
+        mock_target_folder: Tuple[Path, list[Path], Path, list[Path]]
+) -> None:
+    link_folder, _, target_folder, target_paths = mock_target_folder
     count: int = syncutils.write_symlinks(
         target_folder, link_folder
     )
@@ -35,7 +56,7 @@ def test_write_symlinks(
     # Test that links are correct
     for l, t in zip(created_links, target_paths):
         assert l.readlink() == t
-    # Test supplying link name
+    # Test supplying link names
     link_name_list: tuple[str] = tuple([
         "custom0.link", "custom1.link", "custom2.link"
     ])
@@ -49,45 +70,39 @@ def test_write_symlinks(
             key=lambda p: p.name),
         target_paths
     ):
+        assert l.is_symlink()
         assert l.readlink() == t
-    # Test incorrect type link name
+
+
+# @pytest.mark.only
+@pytest.mark.parametrize(
+    "link_names",
+    [
+        pytest.param(1, id="wrong_link_names_type"),
+        pytest.param(tuple([]), id="wrong_link_names_length")
+    ]
+)
+def test_write_symlinks_arguement_types(
+        link_names: Union[int, tuple],
+        mock_target_folder: Tuple[Path, list[Path], Path, list[Path]]
+) -> None:
+    link_folder, _, target_folder, _ = mock_target_folder
+    # Test argument type and length
     with pytest.raises(TypeError):
         syncutils.write_symlinks(
             target_folder, link_folder,
-            link_names=1
-        )
-    # Test incorrect length link name
-    with pytest.raises(TypeError):
-        syncutils.write_symlinks(
-            target_folder, link_folder,
-            link_names=tuple([])
+            link_names
         )
 
 
 # @pytest.mark.only
 def test_write_symlink(
-        tmp_path: Generator[Path, None, None]
+        mock_target_folder: Tuple[Path, list[Path], Path, list[Path]]
 ) -> None:
-    target_folder: Path = tmp_path/'source_folder'
-    target_folder.mkdir(parents=True)
-    link_folder: Path = tmp_path/'link_folder'
-    target_paths: list[Path] = [
-        target_folder/'test0_dir',
-        target_folder/'test1.file'
-    ]
-    link_paths: list[Path] = [
-        link_folder/'test0_dir',
-        link_folder/'test1.file'
-    ]
-    for i, path in enumerate(target_paths):
-        if i == 0:
-            path.mkdir()
-        else:
-            path.touch()
+    link_folder, link_paths, _, target_paths = mock_target_folder
     for target in target_paths:
         syncutils.write_symlink(
-            target, link_folder,
-            target.name
+            target, link_folder
         )
     created_links: list[Path] = sorted(
         link_folder.glob('*'),
@@ -102,13 +117,21 @@ def test_write_symlink(
     for l, src in zip(created_links, target_paths):
         assert l.readlink() == src
     # Test that error is raised if existing incorrect links are found
-    wrong_link: Path = link_paths[0]
-    wrong_link.unlink()
-    wrong_link.symlink_to(target_paths[-1])
+    correct_target: Path = target_paths[0]
+    wrong_target: Path = target_paths[-1]
+    link: Path = link_paths[0]
+    link.unlink()
+    link.symlink_to(wrong_target)
+    del link
     with pytest.raises(FileExistsError):
         syncutils.write_symlink(
-            target_folder, link_folder,
-            target.name
+            correct_target, link_folder
+        )
+    # Test that error is raised if target is not found
+    fake_target: Path = Path('fake path')
+    with pytest.raises(FileNotFoundError):
+        syncutils.write_symlink(
+            fake_target, link_folder
         )
 
 # @pytest.mark.only
@@ -119,7 +142,7 @@ def test_write_symlink(
             "str", Path(""), "", id="wrong_target_type"
         ),
         pytest.param(
-            Path(""), int(1), "", id="wrong_link_type"
+            Path(""), int(1), None, id="wrong_link_type"
         ),
         pytest.param(
             Path(""), Path(""), float(1), id="wrong_name_type"

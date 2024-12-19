@@ -125,3 +125,6 @@ def test_prepare_pressure_config_file(
     ):
         assert mock_output_path.exists()
         assert mock_output_path.read_text() == example_output_path.read_text()
+
+
+# TODO: Test prepare_symlinks via config file

@@ -18,7 +18,7 @@ from pathlib import Path
 
 import dotenv
 
-from . import pressureutils, ioutils
+from . import pressureutils, ioutils, syncutils
 
 
 def setup_environment() -> Path:
@@ -80,8 +80,33 @@ def prepare_pressure(
         )
 
 
+def prepare_symlinks(
+        config_file: Path = CONFIG_FILE_PATH
+) -> None:
+    """
+    Reads config file and collects symlinks into a link folder
+    for all files in target folders.
+    """
+    config = ioutils.read_yaml_config(
+        config_file
+    )
+    symlink_config_section = "symlinks"
+    symlink_jobs = ioutils.get_yaml_section_keys(
+        config_file,
+        symlink_config_section
+    )
+    for job in symlink_jobs:
+        if job == 'aws':
+            target_folders = config[symlink_config_section][job]["target_folders"]
+            link_folder = config[symlink_config_section][job]["link_folder"]
+            for target_folder in target_folders:
+                _ = syncutils.write_symlinks(
+                    target_folder, link_folder
+                )
+
+
 if __name__ == "__main__":
     args = sys.argv
-    print(args[0], dt.datetime.now(dt.timezone.utc))
+    print(args[0], dt.datetime.now(dt.timezone.utc), 'log:')
     if len(args) > 1:
         globals()[args[1]](*args[2:])

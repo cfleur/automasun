@@ -28,40 +28,71 @@ def write_symlinks(
                 f"Found {len(target_items)} in target directory."
                 f" Got type {type(link_names)} of length {len(link_names)}."
             )
-        for source_item, link_name in zip(target_items, link_names):
-            symlink_count += write_symlink(
-                source_item, link_dir,
-                link_name, v=v
-            )
+        for target_item, link_name in zip(target_items, link_names):
+            try:
+                symlink_count += write_symlink(
+                    target_item, link_dir,
+                    link_name, v=v
+                )
+            except Exception as e:
+                if v:
+                    print(
+                        f"Problem linking {target_item} -> {link_dir/link_name}", e
+                    )
     else:
-        for source_item in target_items:
-            symlink_count += write_symlink(
-                source_item, link_dir,
-                source_item.name, v=v
-            )
-    print(f"***\n{symlink_count} symlinks written.")
+        for target_item in target_items:
+            try:
+                symlink_count += write_symlink(
+                    target_item, link_dir,
+                    target_item.name, v=v
+                )
+            except Exception as e:
+                if v:
+                    print(
+                        f"Problem linking {target_item} -> {link_dir/target_item.name}", e
+                    )
+    print(
+        f"***\n{symlink_count} symlinks written."
+        f" Link folder: {link_dir} -> Target folder: {target_dir}"
+    )
     return symlink_count
 
 
 def write_symlink(
         target_path: Path,
         link_dir: Path,
-        link_name: str,
+        link_name: Union[str, None] = None,
+        resolve_path: bool = True,
         v: bool = False
 ) -> int:
     """
     Writes a single symlink from link_dir/link_name -> target_path.
+    resolve_path flag set to True will ensure paths are absolute
+    and if a target is a symlink, the new symlink will point to the
+    original target. Set this flag to False to suppress modification
+    of target path.
     """
     for obj, t in zip(
         (target_path, link_dir, link_name),
-        (Path, Path, str)
+        (Path, Path, (str, type(None)))
     ):
         if not isinstance(obj, t):
             raise TypeError(
                 f"{obj} must be type {t}. Got {type(obj)}."
             )
+    if target_path.exists():
+        if resolve_path and not target_path.is_absolute():
+            target_path = target_path.resolve()
+    else:
+        raise FileNotFoundError(
+            f"Error!\n> Target {target_path} not found."
+        )
     link_dir.mkdir(parents=True, exist_ok=True)
-    link_path: Path = link_dir/link_name
+    if link_name is None:
+        link_path: Path = link_dir/target_path.name
+    else:
+        link_path: Path = link_dir/link_name
+
     try:
         link_path.symlink_to(target_path)
         if v:
@@ -71,17 +102,20 @@ def write_symlink(
         return 1
     except FileExistsError:
         if link_path.is_symlink() and link_path.readlink() == target_path:
-            print(
-                f"Existing symlink found: {link_path} -> {target_path}. Skipping."
-            )
+            if v:
+                print(
+                    f"Existing symlink found: {link_path} -> {target_path}. Skipping."
+                )
+            return 0
         else:
             print(
-                f"File {link_path} exists but does not point to {target_path}."
+                f"Error!\n> File {link_path} exists but does not point to {target_path}."
                 " Check and try again."
             )
             raise
     except OSError as e:
         print(
-            f"Error accessing {target_path} or {link_path}. Check e.g. permissions.",
+            f"Error!\n> Error accessing {target_path} or {link_path}."
+            f" Check e.g. permissions or tha file exists.",
             e
         )
