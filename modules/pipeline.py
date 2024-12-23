@@ -16,33 +16,60 @@ import os
 import sys
 from pathlib import Path
 
-from . import pressureutils, ioutils
+import dotenv
+
+from . import pressureutils, ioutils, syncutils
 
 
 def setup_environment() -> Path:
     """
     Environment key `PIPELINE_CONFIG_FILE` pointing to
-    configuration file is required,for example, export a .env file:
-    export $(grep -v '^#' <path-to-env> | xargs)
+    configuration file is required. For example,
+    - export the variable:
+        export PIPELINE_CONFIG_FILE=<path-to-config-file>
+    - place a .env file with this variable in project root
+    - export a .env file from an alternate location:
+        export $(grep -v '^#' <path-to-env> | xargs)
     """
+    if os.path.isfile('.env'):
+        dotenv.load_dotenv('.env')
     config_file_key = 'PIPELINE_CONFIG_FILE'
-    return Path(os.getenv(config_file_key))
+    try:
+        config_file_path = Path(
+            os.getenv(
+                config_file_key
+            )
+        )
+    except TypeError:
+        print(
+            f">>> Could not find {config_file_key} from environment.",
+            setup_environment.__doc__
+        )
+        raise
+    if not config_file_path.is_file() or config_file_path.suffix != '.yml':
+        raise FileNotFoundError(
+            f" Check environment variable {config_file_key}."
+            f" '{config_file_path}' is not a .yml file."
+        )
+    # TODO: check that config file is valid YAML
+    return config_file_path
 
 
-CONFIG_FILE: Path = setup_environment()
-# TODO: create integration test cases to check user config exists/is valid
+CONFIG_FILE_PATH: Path = setup_environment()
 
 
 def prepare_pressure(
-        config_file: Path = CONFIG_FILE
+        config_file: Path = CONFIG_FILE_PATH
 ) -> None:
     """
     Reads config file and collects locations to process and
     passes them to a function that parses pressure folders
     for those locations.
     """
-    pressure_config_section = "pressure"
-    locations = ioutils.get_yaml_section_keys(
+    v: bool = False # verbose logs
+    vv: bool = False # more verbose logs
+    pressure_config_section: str = "pressure"
+    locations: list = ioutils.get_yaml_section_keys(
         config_file,
         pressure_config_section
     )
@@ -50,12 +77,39 @@ def prepare_pressure(
         pressureutils.parse_pressure_folder(
             config_file,
             pressure_config_section,
-            location
+            location, v=v, vv=vv
         )
+
+
+def prepare_symlinks(
+        config_file: Path = CONFIG_FILE_PATH
+) -> None:
+    """
+    Reads config file and collects symlinks into a link folder
+    for all files in target folders.
+    """
+    resolve_path: bool = True
+    v: bool = False # verbose logs
+    config: dict = ioutils.read_yaml_config(
+        config_file
+    )
+    symlink_config_section: str = "symlinks"
+    symlink_jobs: list = ioutils.get_yaml_section_keys(
+        config_file,
+        symlink_config_section
+    )
+    for job in symlink_jobs:
+        target_folders: list[str] = config[symlink_config_section][job]["target_folders"]
+        link_folder: str = config[symlink_config_section][job]["link_folder"]
+        for target_folder in target_folders:
+            _ = syncutils.write_symlinks(
+                target_folder, link_folder,
+                resolve_path=resolve_path, v=v
+            )
 
 
 if __name__ == "__main__":
     args = sys.argv
-    print(args[0], dt.datetime.now(dt.timezone.utc))
+    print(args[0], dt.datetime.now(dt.timezone.utc), 'log:')
     if len(args) > 1:
         globals()[args[1]](*args[2:])

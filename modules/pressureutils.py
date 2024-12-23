@@ -186,8 +186,8 @@ def parse_pressure_file(
             ])
     else:
         raise ValueError(
-            f'Supported input file types: .lst, .txt.'
-            f' Got {input_file_type}.'
+            f"Supported input file types: '.lst', '.txt'."
+            f" Got '{input_file_type}'."
         )
     output_dir = Path(output_file_path).parent
     if not output_dir.exists():
@@ -431,8 +431,8 @@ def generate_unparsed_pressure_file_list(
         v: bool = False,
         vv: bool = False
 ) -> Tuple[
-        List[PosixPath],
-        List[PosixPath]
+        tuple[Path],
+        tuple[Path]
     ]:
     """
     Takes raw and parsed pressure folders from a config file and
@@ -482,16 +482,16 @@ def generate_unparsed_pressure_file_list(
                 # as parsed pressure files are sent to KIT
         location
     )
-    unparsed_pressure_paths = [
+    unparsed_pressure_paths = tuple(
         Path(raw_pressure_folder)/file
         for file
         in unparsed_pressure_files
-    ]
-    output_paths = [
+    )
+    output_paths = tuple(
         Path(parsed_pressure_folder)/name
         for name
         in output_file_names
-    ]
+    )
     return unparsed_pressure_paths, output_paths
 
 
