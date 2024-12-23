@@ -22,16 +22,17 @@ from .fixtures import (
 # @pytest.mark.only
 def test_parse_pressure_folder(
         mock_config_no_processed_files: Path,
-        mock_processed_file_paths: Tuple[Path, Path]
+        mock_processed_file_paths: Tuple[Tuple[Path], Tuple[Path, Path]]
 ) -> None:
     # Test that when no processed files exist, they are created
     for i, loc in enumerate(LOCS):
+        assert False not in list(not p.exists() for p in mock_processed_file_paths[i])
         pressureutils.parse_pressure_folder(
             mock_config_no_processed_files,
             CONF_SECTION_PRESSURE,
             loc
         )
-        assert mock_processed_file_paths[i].exists()
+        assert False not in list(p.exists() for p in mock_processed_file_paths[i])
     # TODO: check that function actually finds the files
     # and parses them, e.g. by tracking number of files found and parsed
     # in respective functions
@@ -48,21 +49,22 @@ def test_parse_pressure_file(
     # Test that the content of parsed pressure file is correct
     # Use a pressure correction factor of 1.0 so the pressure values
     # remain unchanged by the pressure correction.
-    for i, raw_input_path in enumerate(EXAMPLE_RAW_FILE_PATHS):
-        mock_output_path: Path = tmp_path/f'tmp_parsed_loc{i}.csv'
-        pressureutils.parse_pressure_file(
-            raw_input_path,
-            mock_output_path,
-            pressure_correction=1.0 # calibration factor
-        )
-        mock_output_content = mock_output_path.read_text()
-        with open(
-            EXAMPLE_PROCESSED_FILE_PATHS[i],
-            'r',
-            encoding='utf-8'
-        ) as f:
-            example_output_content = f.read()
-        assert mock_output_content == example_output_content
+    for i, loc_paths in enumerate(EXAMPLE_RAW_FILE_PATHS):
+        for j, raw_input_path in enumerate(loc_paths):
+            mock_output_path: Path = tmp_path/f'tmp_parsed_loc{i}_{raw_input_path.name}.csv'
+            pressureutils.parse_pressure_file(
+                raw_input_path,
+                mock_output_path,
+                pressure_correction=1.0 # calibration factor
+            )
+            mock_output_content = mock_output_path.read_text()
+            with open(
+                EXAMPLE_PROCESSED_FILE_PATHS[i][j],
+                'r',
+                encoding='utf-8'
+            ) as f:
+                example_output_content = f.read()
+            assert mock_output_content == example_output_content
 
 
 # @pytest.mark.only
@@ -233,8 +235,8 @@ def test_generate_unparsed_pressure_file_list(
             CONF_SECTION_PRESSURE,
             loc
         )
-        assert unparsed_paths == [EXAMPLE_RAW_FILE_PATHS[i]]
-        assert output_paths == [mock_processed_file_paths[i]]
+        assert unparsed_paths == EXAMPLE_RAW_FILE_PATHS[i]
+        assert output_paths == mock_processed_file_paths[i]
     # Test that when there are already processed files for
     # the same dates as raw files, the output is empty
     for loc in LOCS:
@@ -243,7 +245,7 @@ def test_generate_unparsed_pressure_file_list(
             CONF_SECTION_PRESSURE,
             loc
         )
-        assert (unparsed_paths, output_paths) == ([], [])
+        assert (unparsed_paths, output_paths) == ((), ())
 
 
 # @pytest.mark.only

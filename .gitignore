@@ -173,3 +173,8 @@ cython_debug/
 !examples/*/*/*.txt
 !examples/*/*/*.csv
 !examples/*/*/*.lst
+
+# Ignore symlinks in the examples folder
+# this folder in generated during testing symlinks
+# it is not version controlled because symlink setup relies on full paths
+examples/pressure/location2_raw_collected/*

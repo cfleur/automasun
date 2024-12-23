@@ -6,6 +6,7 @@ def write_symlinks(
         target_folder_path: Union[str, Path],
         link_folder_path: Union[str, Path],
         link_names: Union[None, tuple[str]] = None,
+        resolve_path: bool = True,
         v: bool = False
 ) -> int:
     """
@@ -32,7 +33,8 @@ def write_symlinks(
             try:
                 symlink_count += write_symlink(
                     target_item, link_dir,
-                    link_name, v=v
+                    link_name, resolve_path=resolve_path,
+                    v=v
                 )
             except Exception as e:
                 if v:
@@ -44,7 +46,8 @@ def write_symlinks(
             try:
                 symlink_count += write_symlink(
                     target_item, link_dir,
-                    target_item.name, v=v
+                    target_item.name, resolve_path=resolve_path,
+                    v=v
                 )
             except Exception as e:
                 if v:

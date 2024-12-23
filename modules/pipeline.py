@@ -56,7 +56,6 @@ def setup_environment() -> Path:
 
 
 CONFIG_FILE_PATH: Path = setup_environment()
-# TODO: create integration test cases to check user config exists/is valid
 
 
 def prepare_pressure(
@@ -67,8 +66,10 @@ def prepare_pressure(
     passes them to a function that parses pressure folders
     for those locations.
     """
-    pressure_config_section = "pressure"
-    locations = ioutils.get_yaml_section_keys(
+    v: bool = False # verbose logs
+    vv: bool = False # more verbose logs
+    pressure_config_section: str = "pressure"
+    locations: list = ioutils.get_yaml_section_keys(
         config_file,
         pressure_config_section
     )
@@ -76,7 +77,7 @@ def prepare_pressure(
         pressureutils.parse_pressure_folder(
             config_file,
             pressure_config_section,
-            location
+            location, v=v, vv=vv
         )
 
 
@@ -87,22 +88,24 @@ def prepare_symlinks(
     Reads config file and collects symlinks into a link folder
     for all files in target folders.
     """
-    config = ioutils.read_yaml_config(
+    resolve_path: bool = True
+    v: bool = False # verbose logs
+    config: dict = ioutils.read_yaml_config(
         config_file
     )
-    symlink_config_section = "symlinks"
-    symlink_jobs = ioutils.get_yaml_section_keys(
+    symlink_config_section: str = "symlinks"
+    symlink_jobs: list = ioutils.get_yaml_section_keys(
         config_file,
         symlink_config_section
     )
     for job in symlink_jobs:
-        if job == 'aws':
-            target_folders = config[symlink_config_section][job]["target_folders"]
-            link_folder = config[symlink_config_section][job]["link_folder"]
-            for target_folder in target_folders:
-                _ = syncutils.write_symlinks(
-                    target_folder, link_folder
-                )
+        target_folders: list[str] = config[symlink_config_section][job]["target_folders"]
+        link_folder: str = config[symlink_config_section][job]["link_folder"]
+        for target_folder in target_folders:
+            _ = syncutils.write_symlinks(
+                target_folder, link_folder,
+                resolve_path=resolve_path, v=v
+            )
 
 
 if __name__ == "__main__":

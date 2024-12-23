@@ -4,39 +4,9 @@ from typing import Generator, Tuple, Union
 import pytest
 
 from ..modules import syncutils
-
-@pytest.fixture(scope="function")
-def mock_target_folder(
-    tmp_path_factory: pytest.TempPathFactory
-) -> Generator[Tuple[Path, list[Path], Path, list[Path]], None, None]:
-    def remove_directory_recursively(input_path: Path):
-        for child in input_path.iterdir():
-            if child.is_file() or child.is_symlink():
-                child.unlink()
-            else:
-                remove_directory_recursively(child)
-        input_path.rmdir()
-
-    link_folder: Path = tmp_path_factory.mktemp("link_folder")
-    link_paths: list[Path] = [
-        link_folder/'test0_dir',
-        link_folder/'test1.file',
-        link_folder/'test2.file'
-    ]
-    target_folder: Path = tmp_path_factory.mktemp("target_folder")
-    target_paths: list[Path] = [
-        target_folder/'test0_dir',
-        target_folder/'test1.file',
-        target_folder/'test2.file'
-    ]
-    for i, path in enumerate(target_paths):
-        if i == 0:
-            path.mkdir()
-        else:
-            path.touch()
-    yield link_folder, link_paths, target_folder, target_paths
-    remove_directory_recursively(link_folder)
-    remove_directory_recursively(target_folder)
+from .fixtures import(
+    mock_target_folder
+)
 
 
 # @pytest.mark.only

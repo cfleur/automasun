@@ -33,7 +33,9 @@ pressure:
     start_date: "2016-06-02"
     end_date:
   location2:
-    raw_pressure_folder: "examples/pressure/location2_raw"
+    raw_pressure_folder: "examples/pressure/location2_raw_collected"
+    # this folder contains symlinks and is generated for running tests
+    # see symlinks section
     raw_file_extension: "lst"
     use_pressure_correction_factor: True
     em27_m: 180
@@ -41,3 +43,21 @@ pressure:
     parsed_pressure_folder: "examples/pressure/location2_processed"
     start_date: "2016-06-02"
     end_date:
+
+symlinks:
+  ###############
+  # template:
+    # job: str, REQUIRED
+        # enter a name for the job
+      # target_folders: list of str, REQUIRED
+        # targets are the items that links point to
+      # link_folder: str, REQUIRED
+        # links point to targets
+  ###############
+  # to skip processing a job, comment out the lines
+  ###############
+  job1:
+    target_folders:
+      - "examples/pressure/location2_raw_2016"
+      - "examples/pressure/location2_raw_2017"
+    link_folder: "examples/pressure/location2_raw_collected"
