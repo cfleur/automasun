@@ -55,8 +55,8 @@ def write_symlinks(
                         f"Problem linking {target_item} -> {link_dir/target_item.name}", e
                     )
     print(
-        f"***\n{symlink_count} symlinks written."
-        f" Link folder: {link_dir} -> Target folder: {target_dir}"
+        f"******\n{symlink_count} symlinks written."
+        f" Link folder: {link_dir} -> Target folder: {target_dir}\n******"
     )
     return symlink_count
 

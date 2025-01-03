@@ -99,6 +99,8 @@ def prepare_symlinks(
         symlink_config_section
     )
     for job in symlink_jobs:
+        # NOTE: if there are differences between pressure and interferrogram symlinks processing
+        # they can be handled them here e.g. by conditioning on the job name
         target_folders: list[str] = config[symlink_config_section][job]["target_folders"]
         link_folder: str = config[symlink_config_section][job]["link_folder"]
         for target_folder in target_folders:
