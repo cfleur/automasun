@@ -8,7 +8,7 @@ import pytest
 from ..modules import timeutils
 
 
-@pytest.mark.only
+# @pytest.mark.only
 @pytest.mark.parametrize(
         "input_date, start_date, end_date, expectation",
         [
