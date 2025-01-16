@@ -1,11 +1,9 @@
 import shutil
-import yaml
 from datetime import datetime, date as Date
 from pathlib import Path, PosixPath
-from typing import Union, List
+from typing import List, Union
 
-import h5py
-import pandas as pd
+import yaml
 
 from . import timeutils
 
@@ -14,6 +12,7 @@ from . import timeutils
 ################### Working with files #######################
 ##############################################################
 
+# NOTE: can be used for organising profile files
 def separate_mod_vmr_map(
         src_path: str,
         dest_dict: dict,
@@ -27,7 +26,7 @@ def separate_mod_vmr_map(
         glob_pattern = f'*{ext}'
         filter_move_files(src_path, glob_pattern, dest)       
 
-
+# NOTE: can be used for organising profile files
 def filter_move_files(
         src_path: str,
         glob_pattern: str,
@@ -61,23 +60,8 @@ def filter_move_files(
     print(f'Moved {file_count} files matching pattern {glob_pattern}')
 
 
-def create_file_path(
-        dir_path: Union[str, PosixPath],
-        file_name: str,
-        create_dir: bool = True
-) -> PosixPath:
-    """
-    Returns a file path within a directory that exists. May create a directory but
-    does not create a file.
-    """
-    _dir = Path(dir_path)
-    if create_dir:
-        _dir.mkdir(parents=True, exist_ok=True)
-    return _dir/file_name
-
-
 def get_file_extension(
-        file_path_or_name: Union[str, PosixPath],
+        file_path_or_name: Union[str, Path],
         v: bool = False
 ) -> str:
     """
@@ -218,24 +202,31 @@ def extract_date_from_fname(
 
     Note: custom parsing instead of datetime's strptime for more
     flexibility in file names.
+
+    For file type '.lst' file name format is:
+        - aws_yyyymmdd.lst
+
+    For file type '.txt' file name format is:
+        - yymmdd_PTU300_log.txt or
+        - yymmdd_PTU300_error_log.txt
+    If string "error" is in name, date will be extracted twice,
+    however due to set operations, dates are unique and are only counted once
+
+    For file type '.csv' file name format is:
+        - <prefix>-<location>-yyyymmdd.csv
     """
     file_type = get_file_extension(file_name)
     if file_type == 'lst':
-        # aws_yyyymmdd.lst
         date_string = file_name.split('.')[0].split('_')[1]
         year = date_string[0:4]
         month = date_string[4:6]
         day = date_string[6:8]
     elif file_type == 'txt':
-        # yymmdd_PTU300_log.txt or yymmdd_PTU300_error_log.txt
-        # if "error" in name, date will be extracted twice, however
-        # due to set operations, dates are unique and are only counted once
         date_string = file_name.split('.')[0].split('_')[0]
         year = '20' + date_string[0:2]
         month = date_string[2:4]
         day = date_string[4:6]
     elif file_type == 'csv':
-        # prefix-<location>-yyyymmdd.csv
         date_string = file_name.split('.')[0].split('-')[2]
         year = date_string[0:4]
         month = date_string[4:6]
@@ -308,56 +299,3 @@ def write_yaml_config(
         encoding='utf-8'
     ) as f:
         return yaml.dump(data, f)
-
-
-##############################################################
-############## CSV and HDF file operations ###################
-##############################################################
-
-
-def get_csv_col(
-        file: Union[str, PosixPath],
-        col_num: int,
-        sep: str = ','
-    ) -> pd.Series:
-    """
-    Returns a column from a csv file specified by column number.
-    """
-    df = pd.read_csv(file, sep=sep)
-    return df[df.columns[col_num]]
-
-
-def get_csv_keys(
-        file: Union[str, PosixPath],
-        sep: str = ','
-    ) -> pd.Index:
-    """
-    Returns the keys from a csv file header as a pandas index.
-    """
-    df = pd.read_csv(file, sep=sep)
-    return df.columns
-
-
-def get_h5_col(
-        file: Union[str, PosixPath],
-        col_num: int
-    ):
-    """
-    Returns a column from an HDF file specified by a column number.
-    """
-    # TODO: column formats are heterogenious and sometimes this fails
-    # TODO: rename to get_hdf_...
-    with h5py.File(file, 'r') as f:
-        group_key = list(f.keys())[col_num]
-        return list(f[group_key])
-
-
-def get_h5_keys(
-        file: Union[str, PosixPath]
-    ):
-    """
-    Returns the keys from an HDF file.
-    """
-    # TODO: rename to get_hdf_...
-    with h5py.File(file, 'r') as f:
-        return [ k for k in f.keys() ]

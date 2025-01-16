@@ -3,10 +3,8 @@ import datetime as dt
 from pathlib import Path
 from typing import Generator
 
-import pandas as pd
 import pytest
 import yaml
-
 
 from ..modules import ioutils
 
@@ -209,18 +207,6 @@ def test_generate_set_difference() -> None:
 
 
 # @pytest.mark.only
-def test_create_file_path() -> None:
-    path = ioutils.create_file_path(
-        MOCK_CSV_DIRNAME,
-        MOCK_CSV_FILENAME,
-        create_dir = True
-    )
-    assert path.parent.is_dir()
-    path.parent.rmdir()
-    assert path == Path(MOCK_CSV_DIRNAME)/MOCK_CSV_FILENAME
-
-
-# @pytest.mark.only
 def test_get_file_extension(
         mock_csv: Path
 ) -> None:
@@ -285,33 +271,3 @@ def test_write_yaml_config(
             data=input_data,
             config_file_path=mock_config_path
         )
-
-
-############## CSV and HDF file operations ###################
-
-# @pytest.mark.only
-def test_get_csv_col(
-        mock_csv: Path
-) -> None:
-    col_number: int = 1
-    df: pd.DataFrame = pd.read_csv(mock_csv)
-    mock_col: pd.Series = df[df.columns[col_number]]
-    csv_col: pd.Series = ioutils.get_csv_col(mock_csv, col_number)
-    assert list(csv_col) == list(mock_col)
-
-
-# @pytest.mark.only
-def test_get_csv_keys(
-        mock_csv: Path
-) -> None:
-    mock_keys: pd.Index = pd.read_csv(mock_csv).keys()
-    csv_keys: pd.Index = ioutils.get_csv_keys(mock_csv)
-    assert list(csv_keys) == list(mock_keys)
-
-
-# TODO:
-# def test_get_hdf_col
-
-
-# TODO:
-# def test_get_hdf_keys
