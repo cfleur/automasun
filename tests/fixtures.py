@@ -5,6 +5,9 @@ import pytest
 
 CONF_SECTION_PRESSURE: str = "pressure"
 CONF_SECTION_SYMLINKS: str = "symlinks"
+EM27S: list[str] = [
+    'SN039', 'SN081', 'SN122'
+]
 LOCS: list[str] = [
     "location1",
     "location2"
@@ -188,6 +191,36 @@ def mock_config_pressure_correction_cases(
     remove_directory_recursively(config.parent)
 
 
+@pytest.fixture
+def mock_config_section_ifg_symlinks(
+        tmp_path_factory: pytest.TempPathFactory,
+        mock_ifg_target_link_folders: Tuple[Path, list[Path], Path, list[Path]]
+) -> Generator[Path, None, None]:
+    """
+    This fixture is used for testing writing symlinks of EM27 ifg folders,
+    which may need to be transformed from 2 digit years to 4 digit years.
+    """
+    link_folder, _, target_folder, _ = mock_ifg_target_link_folders
+    content: str = (
+        f"{CONF_SECTION_SYMLINKS}:\n"
+        f"  {EM27S[0]}:\n"
+        f"    target_folders: \n        - {target_folder}\n"
+        f"    link_folder: '{link_folder}'\n"
+        f"  {EM27S[1]}:\n"
+        f"    target_folders: \n        - {target_folder}\n"
+        f"    link_folder: '{link_folder}'\n"
+        f"  {EM27S[2]}:\n"
+        f"    target_folders: \n        - {target_folder}\n"
+        f"    link_folder: '{link_folder}'\n"
+    )
+    config: Path = tmp_path_factory.mktemp(
+        "tmp_conf"
+    )/"tmp_config.yml"
+    config.write_text(content)
+    yield config
+    remove_directory_recursively(config.parent)
+
+
 @pytest.fixture(scope="function")
 def mock_processed_file_paths(
         tmp_path_factory: pytest.TempPathFactory
@@ -209,7 +242,7 @@ def mock_processed_file_paths(
 
 
 @pytest.fixture(scope="function")
-def mock_target_folder(
+def mock_target_link_folders(
     tmp_path_factory: pytest.TempPathFactory
 ) -> Generator[Tuple[Path, list[Path], Path, list[Path]], None, None]:
     link_folder: Path = tmp_path_factory.mktemp("link_folder")
@@ -224,6 +257,36 @@ def mock_target_folder(
         target_folder/'test1.file',
         target_folder/'test2.file'
     ]
+    # only create target_paths in the file system, do not create link_paths
+    for i, path in enumerate(target_paths):
+        if i == 0:
+            path.mkdir()
+        else:
+            path.touch()
+    yield link_folder, link_paths, target_folder, target_paths
+    remove_directory_recursively(link_folder)
+    remove_directory_recursively(target_folder)
+
+
+@pytest.fixture(scope="function")
+def mock_ifg_target_link_folders(
+    tmp_path_factory: pytest.TempPathFactory
+) -> Generator[Tuple[Path, list[Path], Path, list[Path]], None, None]:
+    link_folder: Path = tmp_path_factory.mktemp("link_folder")
+    link_paths: list[Path] = [
+        link_folder/'19960229',
+        link_folder/'20001231',
+        link_folder/'20200814',
+        link_folder/'20500606'
+    ]
+    target_folder: Path = tmp_path_factory.mktemp("target_folder")
+    target_paths: list[Path] = [
+        target_folder/'19960229',
+        target_folder/'001231',
+        target_folder/'20200814',
+        target_folder/'500606'
+    ]
+    # only create target_paths in the file system, do not create link_paths
     for i, path in enumerate(target_paths):
         if i == 0:
             path.mkdir()

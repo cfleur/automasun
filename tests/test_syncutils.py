@@ -5,15 +5,15 @@ import pytest
 
 from ..modules import syncutils
 from .fixtures import(
-    mock_target_folder
+    mock_target_link_folders
 )
 
 
 # @pytest.mark.only
 def test_write_symlinks(
-        mock_target_folder: Tuple[Path, list[Path], Path, list[Path]]
+        mock_target_link_folders: Tuple[Path, list[Path], Path, list[Path]]
 ) -> None:
-    link_folder, _, target_folder, target_paths = mock_target_folder
+    link_folder, _, target_folder, target_paths = mock_target_link_folders
     count: int = syncutils.write_symlinks(
         target_folder, link_folder
     )
@@ -54,9 +54,9 @@ def test_write_symlinks(
 )
 def test_write_symlinks_arguement_types(
         link_names: Union[int, tuple],
-        mock_target_folder: Tuple[Path, list[Path], Path, list[Path]]
+        mock_target_link_folders: Tuple[Path, list[Path], Path, list[Path]]
 ) -> None:
-    link_folder, _, target_folder, _ = mock_target_folder
+    link_folder, _, target_folder, _ = mock_target_link_folders
     # Test argument type and length
     with pytest.raises(TypeError):
         syncutils.write_symlinks(
@@ -67,9 +67,9 @@ def test_write_symlinks_arguement_types(
 
 # @pytest.mark.only
 def test_write_symlink(
-        mock_target_folder: Tuple[Path, list[Path], Path, list[Path]]
+        mock_target_link_folders: Tuple[Path, list[Path], Path, list[Path]]
 ) -> None:
-    link_folder, link_paths, _, target_paths = mock_target_folder
+    link_folder, link_paths, _, target_paths = mock_target_link_folders
     for target in target_paths:
         syncutils.write_symlink(
             target, link_folder

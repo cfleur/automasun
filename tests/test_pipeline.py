@@ -9,6 +9,8 @@ from ..modules import pipeline, ioutils
 from .fixtures import (
     mock_config_existing_processed_files,
     mock_config_no_processed_files,
+    mock_config_section_ifg_symlinks,
+    mock_ifg_target_link_folders,
     mock_processed_file_paths,
     remove_directory_recursively,
     LOCS,
@@ -236,3 +238,29 @@ def test_prepare_symlinks(
         )
     # clean up
     remove_directory_recursively(tmp_path)
+
+
+# @pytest.mark.only
+def test_prepare_symlinks_ifg(
+        mock_config_section_ifg_symlinks: Path,
+        mock_ifg_target_link_folders: Tuple[Path, list[Path], Path, list[Path]]
+) -> None:
+    """
+    Test prepare_symlinks when symlinks section of config contains EM27 instruments.
+    In this case, folder name dates should be changed from 2 digit years to 4 digit years
+    if they are not already 4 digit years.
+    """
+    assert mock_config_section_ifg_symlinks.exists()
+    assert mock_config_section_ifg_symlinks.is_file()
+
+    # Test that correct output is given based on mock config file
+    # i.e. that correct symlinks are created.
+    pipeline.prepare_symlinks(
+        mock_config_section_ifg_symlinks
+    )
+    link_folder, link_paths, _, _ = mock_ifg_target_link_folders
+    created_links = sorted(
+        link_folder.glob('*'),
+        key=lambda d: d.name
+    )
+    assert created_links == link_paths
