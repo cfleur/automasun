@@ -1,4 +1,5 @@
 import shutil
+import datetime as dt
 from datetime import datetime, date as Date
 from pathlib import Path, PosixPath
 from typing import List, Union
@@ -238,6 +239,40 @@ def extract_date_from_fname(
         )
     date = datetime(int(year), int(month), int(day)).date()
     return date
+
+
+def generate_dirname_from_date(
+        date_object: dt.datetime
+) -> str:
+    """
+    Given a datetime object, create a string of the format %Y%m%d.
+    """
+    try:
+        return dt.datetime.strftime(date_object, '%Y%m%d')
+    except TypeError:
+        print(f'Please provide a valid datetime object. Got {date_object}')
+        raise
+
+
+def extract_date_from_dirname(
+        dirname: str
+) -> dt.datetime:
+    """
+    Given a string of format %Y%m%d or %y%m%d returns the date.
+    Raises a ValueError for different formats.
+    """
+    try:
+        return dt.datetime.strptime(dirname, '%y%m%d')
+        # if the date string has a 2 digit year it will be returned here.
+        # it is important to compare evaluate the 2 digit year first
+        # because passing a 6 digit string to %Y%m%d will result in incorrect date.
+    except ValueError:
+        try:
+            return dt.datetime.strptime(dirname, '%Y%m%d')
+            # if the date has a 4 digit year it will be returned here.
+        except ValueError:
+            print(f"{dirname} is not in format '%Y%m%d or %y%m%d'.")
+            raise
 
 
 def generate_set_difference(
