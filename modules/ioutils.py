@@ -1,6 +1,5 @@
 import shutil
 import datetime as dt
-from datetime import datetime, date as Date
 from pathlib import Path, PosixPath
 from typing import List, Union
 
@@ -128,7 +127,7 @@ def generate_file_list_from_dates(
 
 
 def generate_fname_from_date(
-        date: Date,
+        date: dt.date,
         file_type: str,
         location: Union[str, None] = None,
         v: bool = False
@@ -169,11 +168,11 @@ def generate_fname_from_date(
 
 def generate_date_list_from_folder(
         folder_path: Union[str, PosixPath],
-        start_date: Date,
-        end_date: Date,
+        start_date: dt.date,
+        end_date: dt.date,
         v: bool = False,
         vv: bool = False
-) -> List[Date]:
+) -> List[dt.date]:
     """
     Generates a list of date objects from a folder containing
     file names that include the date.
@@ -197,7 +196,7 @@ def generate_date_list_from_folder(
 
 def extract_date_from_fname(
         file_name: str
-) -> Date:
+) -> dt.date:
     """
     Parses a date from a filename.
 
@@ -237,7 +236,7 @@ def extract_date_from_fname(
             f'Pressure file type \'{file_type}\' not supported.'
             ' Supported types: .lst, .txt, .csv'
         )
-    date = datetime(int(year), int(month), int(day)).date()
+    date = dt.datetime(int(year), int(month), int(day)).date()
     return date
 
 
