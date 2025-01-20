@@ -1,5 +1,6 @@
 import datetime as dt
 
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Generator
 
@@ -171,6 +172,51 @@ def test_extract_date_from_fname() -> None:
         except ValueError:
             ...
     assert dates == DATES
+
+
+# @pytest.mark.only
+@pytest.mark.parametrize(
+    "date, expectation",
+    [
+        pytest.param(
+            dt.datetime(2000, 12, 31), nullcontext('20001231'), id='datetime_object'
+        ),
+        pytest.param(
+            'different object', pytest.raises(TypeError), id='not_datetime_object'
+        )
+    ]
+)
+def test_generate_dirname_from_date(
+        date, expectation
+) -> None:
+    with expectation as e:
+        assert ioutils.generate_dirname_from_date(
+            date
+        ) == e
+
+
+# @pytest.mark.only
+@pytest.mark.parametrize(
+    "dirname, expectation",
+    [
+        pytest.param(
+            '20001231', nullcontext(dt.datetime(2000, 12, 31)), id='dirname_format_Ymd'
+        ),
+        pytest.param(
+            '001231', nullcontext(dt.datetime(2000, 12, 31)), id='dirname_format_ymd'
+        ),
+        pytest.param(
+            'different dirname format', pytest.raises(ValueError), id='wrong_dirname_format'
+        )
+    ]
+)
+def test_extract_date_from_dirname(
+        dirname, expectation
+) -> None:
+    with expectation as e:
+        assert ioutils.extract_date_from_dirname(
+            dirname
+        ) == e
 
 
 # @pytest.mark.only

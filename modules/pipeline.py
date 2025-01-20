@@ -15,6 +15,7 @@ import datetime as dt
 import os
 import sys
 from pathlib import Path
+from typing import Union
 
 import dotenv
 
@@ -85,8 +86,10 @@ def prepare_symlinks(
         config_file: Path = CONFIG_FILE_PATH
 ) -> None:
     """
-    Reads config file and collects symlinks into a link folder
-    for all files in target folders.
+    Reads config file and collects symlinks into a link folder for all files in target folders.
+    When processing EM27 instrument interferogram folders, the folder name is checked to be in
+    format yyyymmdd. If it is not (i.e. in format yymmdd with only 2 digit years), the symlink
+    name will be changed to yyyymmdd (4 digit year).
     """
     resolve_path: bool = True
     v: bool = False # verbose logs
@@ -98,16 +101,43 @@ def prepare_symlinks(
         config_file,
         symlink_config_section
     )
-    for job in symlink_jobs:
-        # NOTE: if there are differences between pressure and interferrogram symlinks processing
+    EM27_instruments: list[str] = [
+        'SN039', 'SN081', 'SN122'
+    ]
+    link_names: Union[tuple[str], None] = None
+    for job_name in symlink_jobs:
+        # NOTE: if there are differences between pressure and interferogram symlinks processing
         # they can be handled them here e.g. by conditioning on the job name
-        target_folders: list[str] = config[symlink_config_section][job]["target_folders"]
-        link_folder: str = config[symlink_config_section][job]["link_folder"]
+        target_folders: list[str] = config[symlink_config_section][job_name]["target_folders"]
+        link_folder: str = config[symlink_config_section][job_name]["link_folder"]
         for target_folder in target_folders:
-            _ = syncutils.write_symlinks(
-                target_folder, link_folder,
-                resolve_path=resolve_path, v=v
-            )
+            link_names: Union[tuple[str], None] = None
+            try:
+                if job_name in EM27_instruments:
+                    print(
+                        f"\n > Creating symlinks for {job_name} interferograms."
+                    )
+                    target_items = sorted(
+                        Path(target_folder).glob('*'),
+                        key=lambda p: p.name
+                    ) # same sorting key as in write_symlinks
+                    link_names = tuple(
+                        ioutils.generate_dirname_from_date(
+                            ioutils.extract_date_from_dirname(
+                                item.name
+                            )
+                        )
+                        for item in target_items
+                    )
+                _ = syncutils.write_symlinks(
+                    target_folder, link_folder, link_names=link_names,
+                    resolve_path=resolve_path, v=v
+                )
+            except ValueError as e:
+                print(
+                    f"! Error, skipping '{target_folder}'. Could not parse folder date. Perhaps there are non-ifg folders in this directory?"
+                    " Please supply a directory which only has interferogram measurement folders.\n", e
+                )
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 import shutil
-from datetime import datetime, date as Date
+import datetime as dt
 from pathlib import Path, PosixPath
 from typing import List, Union
 
@@ -127,7 +127,7 @@ def generate_file_list_from_dates(
 
 
 def generate_fname_from_date(
-        date: Date,
+        date: dt.date,
         file_type: str,
         location: Union[str, None] = None,
         v: bool = False
@@ -168,11 +168,11 @@ def generate_fname_from_date(
 
 def generate_date_list_from_folder(
         folder_path: Union[str, PosixPath],
-        start_date: Date,
-        end_date: Date,
+        start_date: dt.date,
+        end_date: dt.date,
         v: bool = False,
         vv: bool = False
-) -> List[Date]:
+) -> List[dt.date]:
     """
     Generates a list of date objects from a folder containing
     file names that include the date.
@@ -196,7 +196,7 @@ def generate_date_list_from_folder(
 
 def extract_date_from_fname(
         file_name: str
-) -> Date:
+) -> dt.date:
     """
     Parses a date from a filename.
 
@@ -236,8 +236,43 @@ def extract_date_from_fname(
             f'Pressure file type \'{file_type}\' not supported.'
             ' Supported types: .lst, .txt, .csv'
         )
-    date = datetime(int(year), int(month), int(day)).date()
+    date = dt.datetime(int(year), int(month), int(day)).date()
     return date
+
+
+def generate_dirname_from_date(
+        date_object: dt.datetime
+) -> str:
+    """
+    Given a datetime object, create a string of the format %Y%m%d.
+    """
+    try:
+        return dt.datetime.strftime(date_object, '%Y%m%d')
+    except TypeError:
+        print(f'Please provide a valid datetime object. Got {date_object}')
+        raise
+
+
+def extract_date_from_dirname(
+        dirname: str
+) -> dt.datetime:
+    """
+    Given a string of format %Y%m%d or %y%m%d returns the date.
+    Raises a ValueError for different formats. Used to ensure ifg measurement directory
+    symlinks are named with 4 digit years.
+    """
+    try:
+        return dt.datetime.strptime(dirname, '%y%m%d')
+        # if the date string has a 2 digit year it will be returned here.
+        # it is important to compare evaluate the 2 digit year first
+        # because passing a 6 digit string to %Y%m%d will result in incorrect date.
+    except ValueError:
+        try:
+            return dt.datetime.strptime(dirname, '%Y%m%d')
+            # if the date has a 4 digit year it will be returned here.
+        except ValueError:
+            print(f"Folder '{dirname}' is not in format '%Y%m%d or %y%m%d'.")
+            raise
 
 
 def generate_set_difference(
