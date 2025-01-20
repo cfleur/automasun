@@ -258,7 +258,8 @@ def extract_date_from_dirname(
 ) -> dt.datetime:
     """
     Given a string of format %Y%m%d or %y%m%d returns the date.
-    Raises a ValueError for different formats.
+    Raises a ValueError for different formats. Used to ensure ifg measurement directory
+    symlinks are named with 4 digit years.
     """
     try:
         return dt.datetime.strptime(dirname, '%y%m%d')
@@ -270,7 +271,7 @@ def extract_date_from_dirname(
             return dt.datetime.strptime(dirname, '%Y%m%d')
             # if the date has a 4 digit year it will be returned here.
         except ValueError:
-            print(f"{dirname} is not in format '%Y%m%d or %y%m%d'.")
+            print(f"Folder '{dirname}' is not in format '%Y%m%d or %y%m%d'.")
             raise
 
 

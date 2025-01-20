@@ -112,23 +112,32 @@ def prepare_symlinks(
         link_folder: str = config[symlink_config_section][job_name]["link_folder"]
         for target_folder in target_folders:
             link_names: Union[tuple[str], None] = None
-            if job_name in EM27_instruments:
-                target_items = sorted(
-                    Path(target_folder).glob('*'),
-                    key=lambda p: p.name
-                ) # same sorting key as in write_symlinks
-                link_names = tuple(
-                    ioutils.generate_dirname_from_date(
-                        ioutils.extract_date_from_dirname(
-                            item.name
-                        )
+            try:
+                if job_name in EM27_instruments:
+                    print(
+                        f"\n > Creating symlinks for {job_name} interferograms."
                     )
-                    for item in target_items
+                    target_items = sorted(
+                        Path(target_folder).glob('*'),
+                        key=lambda p: p.name
+                    ) # same sorting key as in write_symlinks
+                    link_names = tuple(
+                        ioutils.generate_dirname_from_date(
+                            ioutils.extract_date_from_dirname(
+                                item.name
+                            )
+                        )
+                        for item in target_items
+                    )
+                _ = syncutils.write_symlinks(
+                    target_folder, link_folder, link_names=link_names,
+                    resolve_path=resolve_path, v=v
                 )
-            _ = syncutils.write_symlinks(
-                target_folder, link_folder, link_names=link_names,
-                resolve_path=resolve_path, v=v
-            )
+            except ValueError as e:
+                print(
+                    f"! Error, skipping '{target_folder}'. Could not parse folder date. Perhaps there are non-ifg folders in this directory?"
+                    " Please supply a directory which only has interferogram measurement folders.\n", e
+                )
 
 
 if __name__ == "__main__":
