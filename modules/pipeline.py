@@ -141,7 +141,11 @@ def prepare_symlinks(
 
 
 if __name__ == "__main__":
-    args = sys.argv
-    print(args[0], dt.datetime.now(dt.timezone.utc), 'log:')
+    args: list = sys.argv
+    start_time_utc: dt.datetime = dt.datetime.now(dt.timezone.utc)
+    print(f'\n-- LOG {start_time_utc} {args[0]} {args[1]} started --')
     if len(args) > 1:
         globals()[args[1]](*args[2:])
+    end_time_utc: dt.datetime = dt.datetime.now(dt.timezone.utc)
+    run_time_delta: dt.timedelta = end_time_utc - start_time_utc
+    print(f'\n-- LOG {end_time_utc} {args[0]} {args[1]} completed in {run_time_delta} --')
