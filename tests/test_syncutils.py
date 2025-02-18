@@ -3,7 +3,7 @@ from typing import Generator, Tuple, Union
 
 import pytest
 
-from ..modules import syncutils
+from modules import syncutils
 from .fixtures import(
     mock_target_link_folders
 )

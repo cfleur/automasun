@@ -5,7 +5,7 @@ from typing import Generator, Tuple
 
 import pytest
 
-from ..modules import pipeline, ioutils
+from modules import pipeline, ioutils
 from .fixtures import (
     mock_config_existing_processed_files,
     mock_config_no_processed_files,

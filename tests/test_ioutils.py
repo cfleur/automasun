@@ -7,7 +7,7 @@ from typing import Generator
 import pytest
 import yaml
 
-from ..modules import ioutils
+from modules import ioutils
 
 
 DATES = [

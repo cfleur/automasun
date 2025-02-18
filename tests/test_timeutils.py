@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ..modules import timeutils
+from modules import timeutils
 
 
 # @pytest.mark.only
