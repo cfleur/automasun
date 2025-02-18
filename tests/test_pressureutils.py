@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ..modules import pressureutils
+from modules import pressureutils
 from .fixtures import (
     mock_config_existing_processed_files,
     mock_config_no_processed_files,

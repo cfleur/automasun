@@ -56,17 +56,16 @@ def setup_environment() -> Path:
     return config_file_path
 
 
-CONFIG_FILE_PATH: Path = setup_environment()
-
-
 def prepare_pressure(
-        config_file: Path = CONFIG_FILE_PATH
+        config_file: Union[Path, None] = None
 ) -> None:
     """
     Reads config file and collects locations to process and
     passes them to a function that parses pressure folders
     for those locations.
     """
+    if config_file is None:
+        config_file = setup_environment()
     v: bool = False # verbose logs
     vv: bool = False # more verbose logs
     pressure_config_section: str = "pressure"
@@ -83,7 +82,7 @@ def prepare_pressure(
 
 
 def prepare_symlinks(
-        config_file: Path = CONFIG_FILE_PATH
+        config_file: Union[Path, None] = None
 ) -> None:
     """
     Reads config file and collects symlinks into a link folder for all files in target folders.
@@ -91,6 +90,8 @@ def prepare_symlinks(
     format yyyymmdd. If it is not (i.e. in format yymmdd with only 2 digit years), the symlink
     name will be changed to yyyymmdd (4 digit year).
     """
+    if config_file is None:
+        config_file = setup_environment()
     resolve_path: bool = True
     v: bool = False # verbose logs
     config: dict = ioutils.read_yaml_config(
