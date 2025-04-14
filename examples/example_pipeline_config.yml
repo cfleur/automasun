@@ -18,7 +18,7 @@ pressure:
         # The elevation above sea level of the pressure sensor in meters
       # start_date: str, yyyy-mm-dd, REQUIRED
         # first date to parse
-      # end_date: str, yyyy-mm-dd, REQUIRED
+      # end_date: str, yyyy-mm-dd, OPTIONAL
         # last date to parse, OPTIONAL, default is yesterday
   ###############
   # to skip processing a location, comment out the lines

@@ -80,6 +80,7 @@ cp -v .env.template .env
 
 Configure these tools via a YAML file.
 An annotated example can be found at: `examples/example_pipeline_config.yml`.
+A template can be found at `pipeline_config.template.yml`.
 To skip a job or a section, comment out or delete the lines.
 
 The following instructions assume the use case of moving an EM27/SUN instrument to a new location, although these tools can be used for more general use cases.
