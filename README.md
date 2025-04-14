@@ -3,7 +3,7 @@
 This is a collection of tools for transforming input data to run retrievals with ground-based spectrometry data (e.g. measured with an EM27/SUN instrument), i.e. with [em27-retrieval-pipeline](https://github.com/tum-esm/em27-retrieval-pipeline) or [PROFFASTpylot](https://gitlab.eudat.eu/coccon-kit/proffastpylot).
 
 The main tools are configured in a YAML file and do the following:
-- create symlinks for working with different folder structures to either use the parse pressure tools in this repository or use the retrieval batch precessing pipeline at [em27-retrieval-pipeline](https://github.com/tum-esm/em27-retrieval-pipeline) (see `examples/pressure/location2_raw_collected`)
+- create symlinks for working with different folder structures to either use the parse pressure tools in this repository or use the retrieval batch precessing pipeline at [em27-retrieval-pipeline](https://github.com/tum-esm/em27-retrieval-pipeline) (see `examples/pressure/location2_raw_collected` after running the tests)
 - parse pressure/meteorological files from different formats to a csv and apply a pressure correction based on altitude as input for a retrieval algorithm (see `examples/pressure`)
 
 ## Installation
@@ -17,7 +17,7 @@ If you have your own virtual environment, first tell PDM where it is:
 pdm use </path/to/your/environment>
 ```
 
-> 💡 Get a list of environments and their paths with `conda env list`if using conda.
+> 💡 Get a list of environments and their paths with `conda env list` if using conda.
 
 You should now have a file in the directory called `.pdm-python` which contains the file path for your designated virtual environment for that submodule.
 This tells PMD where to install packages.
@@ -62,7 +62,7 @@ or, to test the environment is set up and the configuration file exists, run:
 make test-integration
 ```
 
-> Make is used to set up the necessary files for the tests.
+> A Makefile is used to set up the necessary files for the tests.
 
 🔷 Before running the integration tests, make sure to set up the config file and export an environment variable pointing to it:
 ```
@@ -86,7 +86,7 @@ The following instructions assume the use case of moving an EM27/SUN instrument 
 
 ### Preparing symlinks for a new location
 
-The `symlinks` section contains jobs for producing symlinks to pressure and interferogram (`SNXXX`) folders/files.
+The `symlinks` section contains jobs for producing symlinks to pressure and interferogram folders/files.
 Each job contains one link folder and multiple target folders:
 ```
 target_folders:
@@ -95,16 +95,22 @@ target_folders:
 link_folder: "/full/path/to/link/folder"
 ```
 
-Interferogram jobs use additional logic to parse measurement folder names (dates) into a format accepted by [em27-retrieval-pipeline](https://github.com/tum-esm/em27-retrieval-pipeline) (i.e. `yyyymmdd`).
+> 💡 Interferogram jobs use additional logic to parse measurement folder names (dates) into a format accepted by [em27-retrieval-pipeline](https://github.com/tum-esm/em27-retrieval-pipeline) (i.e. `yyyymmdd`).
+
+From inside the virtual environment, run the symlink jobs with:
+```
+python -m modules.pipeline prepare_symlinks
+```
 
 #### Pressure symlink jobs
 
 A new job needs to be set up (along with possible code adjustments) if a new pressure station provides files that are split up into multiple sub-folders to link them into a single folder for further processing with these tools.
+Use a meaningful name for the job name (at the time of writing there is no logic that depends on the name of the job unless it is an interferogram symlinks job).
 
 #### Interferogram symlink jobs
 
-A new job needs to be set up if a new instrument is set up (along with possible code adjustments: note that instrument serial numbers are hard coded into `pipeline.py` at the time of writing).
-To use [em27-retrieval-pipeline](https://github.com/tum-esm/em27-retrieval-pipeline), if interferograms are split up, e.g. by location, all measurement directories of an instrument should be linked into a single directory, namely `ifg-measurements/SNXXX/`.
+A new job needs to be set up if a new instrument is set up with the name `SNXXX` (the serial number), along with possible code adjustments: note that instrument serial numbers are hard coded into `pipeline.py` at the time of writing.
+To use [em27-retrieval-pipeline](https://github.com/tum-esm/em27-retrieval-pipeline), if interferograms are split up, e.g. by location, all measurement directories of an instrument should be linked into a single directory, namely of the form `ifg-measurements/SNXXX/`.
 
 ### Preparing pressure files for retrievals
 
@@ -121,13 +127,18 @@ When a new measurement location is created, regardless if the instrument is new 
     - `raw_file_extension`: the extension of the raw pressure files for this location (note: typical pressure file extensions and formats are hard-coded at the time of writing; for new types of files, update the code as necessary)
     - `parsed_pressure_folder`: the location which will be referenced in the retrieval pipeline for the pressure for this location (the final directory in the path should be named after the location, e.g. `prepared-input-data/pressure/parsed-pressure-files/LOCATION_A`, and does not need to exist)
     - `start_date`: the first date for which pressure files should be processed (this can be e.g. the date the instrument started measuring in this location)
-    - `end_date` is optional, and defaults to yesterday
+    - `end_date`: optional, default is yesterday
 3. For creating a calibrated pressure column, configure the following fields:
     - `use_pressure_correction_factor`: set to True
     - `em27_m`: the elevation above sea level of the mirrors of em27 instrument in meters
     - `pressure_sensor_m`: the elevation above sea level of the pressure sensor in meters
 
 > ⚠️ Note: use a period for decimal for numerical values when filling out this file.
+
+From inside the virtual environment, run the pressure jobs with:
+```
+python -m modules.pipeline prepare_pressure
+```
 
 ## Contributing
 
