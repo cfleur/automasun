@@ -1,0 +1,45 @@
+pressure:
+    location_id: str, REQUIRED
+      # enter the location name of the pressure measurements
+      # this name will be used in writing the parsed file names
+      raw_pressure_folder: str, REQUIRED
+        # full path of the raw pressure data
+      raw_file_extension: str, REQUIRED
+        # the extension of raw data files
+        # do not enter a dot before the extension
+      parsed_pressure_folder: str, REQUIRED
+        # full path of the parsed pressure data
+      use_pressure_correction_factor: bool, OPTIONAL
+        # True to calibrate the pressure to the em27 instrument elevation
+      em27_m: int | float | str, OPTIONAL
+        # The elevation above sea level of the mirrors of em27 instrument in meters
+      pressure_sensor_m: int | float | str, OPTIONAL
+        # The elevation above sea level of the pressure sensor in meters
+      start_date: str, yyyy-mm-dd, REQUIRED
+        # first date to parse
+      end_date: str, yyyy-mm-dd, OPTIONAL
+        # last date to parse, OPTIONAL, default is yesterday
+  ###############
+  # To skip processing a location, comment out the lines
+  # Location ids should be unique. If a locations id is used twice,
+  # only the last instance of it will be considered (other entries are overwritten).
+  # If pressure elevation changes for a location, the previous entry
+  # can be left in this file for record keeping. Ensure that the
+  # entry that you want to process comes after any other entries with
+  # the same name.
+  ###############
+
+symlinks:
+  ###############
+  # template:
+    job_id: str, REQUIRED
+      #  job id should be unique and meaningful
+      target_folders: list, REQUIRED
+        - string, REQUIRED
+        # full path of one or more target folders
+        # the target of a symlink is the real file/folder that is being linked to
+      link_folder: str, REQUIRED
+        # full path of folder that will contain links to the targets
+  ###############
+  # To skip processing a job, comment out the lines
+  ###############
